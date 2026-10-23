@@ -50,6 +50,13 @@ matches is allowed.
 ## Commands
 
     python scripts/check_data.py --baseline     verify a data copy
+    python run.py [--method NAME]               build a submission into evaluation/results/
+    python scripts/damage_test.py               public 5 min with realistic ball blackouts
+    python scripts/sanity_report.py             does a full-match submission look like football
+    python scripts/gap_clips.py                 local clips of the longest ball blackouts
     python evaluation/validate_submission.py F  check a submission
     python evaluation/run_evaluation.py         score everything in evaluation/results/
     python scripts/guard.py                     the data-leak check
+
+New methods go in possession/methods.py; run.py and both test scripts pick them up from there.
+Log every experiment in docs/experiments.md.
