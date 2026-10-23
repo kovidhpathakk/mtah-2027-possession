@@ -1,0 +1,17 @@
+name: guard
+
+# The repository is public and the match data is not. This fails any push or pull request that
+# would publish data, a video, an archive, a large file or a notebook with saved outputs.
+on:
+  push:
+  pull_request:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/guard.py

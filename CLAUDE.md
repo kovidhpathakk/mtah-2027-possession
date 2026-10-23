@@ -1,0 +1,55 @@
+# Team rules for Claude
+
+This is our team's entry to More than a Hack 2027, Phase 1: label every frame of one match
+(FC Barcelona vs Athletic Club) as `H` / `A` / `D` / `X`. Ranked on `spellF1` against a private
+full-match ground truth. The organisers' docs are README.md, CHALLENGE.md, DATA.md,
+EVALUATION.md, SUBMISSION.md and RULES.md; `evaluation/possession_metrics.py` defines the metrics.
+
+## The data never reaches you
+
+The competition terms forbid giving the match data, or any extract of it, to a hosted LLM. That
+includes you.
+
+- Never read, print, `head`, `cat` or open files under `data/`, or show rows, frames or cells
+  from them. This covers tracking (`*_atd.txt`, `*_atd.xml`), homography, Smart Tagging, video,
+  and anything derived from them that keeps per-frame detail (`data/derived/`).
+- Write code that the user runs, and have it print **aggregates only**: counts, percentages,
+  means, distributions, scores. Never print or log individual rows.
+- Never view video frames, screenshots or clips.
+- The public ground truth (`evaluation/gt/*_public.csv`) and the baseline CSVs in
+  `evaluation/results/` are published by the organisers and fine to read.
+
+## The data never reaches git
+
+The repository is public.
+
+- Everything under `data/` stays local; `.gitignore` covers it. Keep derived outputs in
+  `data/derived/` too.
+- `scripts/guard.py` runs as a pre-commit hook and in CI. Never bypass it (`--no-verify`).
+- Clear notebook outputs before committing.
+
+## Labels come from an algorithm
+
+No hand labelling of this match, including hand-correcting model output. Watching video to
+understand failures is fine; turning what you see into labels is not. Labelled data from *other*
+matches is allowed.
+
+## Conventions
+
+- Everything is indexed by **tactical video frame, 0..199318**. ATD `frame_id` is video frame + 1.
+- Graded halves: video frames 11185..90651 and 110808..190197 (`games.half_video_blocks`).
+  Write `X` outside them. Frames 110808..113741 are graded and are `D` (2nd half before kickoff).
+- Distances in metres: multiply normalised x by 105.3 and y by 68.0 first.
+- Inside the halves, always output `H`, `A` or `D`. `X` there never adds score.
+- Never tune on the public 5 minutes. Compare versions on the damage test and the full-match
+  sanity report; treat spellF1 differences under ~0.04 as noise.
+- Every submission must pass `python evaluation/validate_submission.py <file>` and must be
+  reproducible from a clean clone, byte for byte: pinned dependencies, fixed seeds.
+- Match the style of the organisers' code: numpy/pandas, docstrings that explain why.
+
+## Commands
+
+    python scripts/check_data.py --baseline     verify a data copy
+    python evaluation/validate_submission.py F  check a submission
+    python evaluation/run_evaluation.py         score everything in evaluation/results/
+    python scripts/guard.py                     the data-leak check

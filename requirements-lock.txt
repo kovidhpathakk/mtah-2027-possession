@@ -1,0 +1,4 @@
+# Exact versions for our pipeline, so every teammate and the organisers regenerate a
+# byte-identical submission. Add new dependencies here with an exact version.
+numpy==2.0.2
+pandas==2.3.3
