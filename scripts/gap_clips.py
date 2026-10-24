@@ -6,6 +6,7 @@ them -- and whether building our own ball detector is worth it. Only watching te
 
     python scripts/gap_clips.py                # the 15 longest gaps
     python scripts/gap_clips.py --top 25
+    python scripts/gap_clips.py --out ~/Downloads/mtah_gap_clips --index-only
 
 Each clip runs from LEAD seconds before the ball disappears to LEAD seconds after it returns. A
 red bar across the top of the picture marks the frames where the tracker has no ball. Clips and
@@ -77,14 +78,18 @@ def cut(video, out_path, first, last, gap_first, gap_last):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--top", type=int, default=15, help="how many of the longest gaps")
+    parser.add_argument("--out", default=OUT_DIR, help="folder for the clips and index")
+    parser.add_argument("--index-only", action="store_true",
+                        help="rewrite index.csv without re-cutting the clips")
     args = parser.parse_args()
+    out_dir = os.path.expanduser(args.out)
 
     video = asset_paths()["video"]
-    if not os.path.isfile(video):
+    if not args.index_only and not os.path.isfile(video):
         sys.exit("no video at {} -- see SETUP.md".format(video))
 
     gaps = sorted(ball_gaps(load_tracking()["ball"]), key=lambda g: g[1] - g[2])[:args.top]
-    os.makedirs(OUT_DIR, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     blocks = dict((half, (first, last)) for half, first, last in half_video_blocks(GAME))
 
     rows = []
@@ -92,17 +97,21 @@ if __name__ == '__main__':
         first = max(gap_first - LEAD * FPS, blocks[half][0])
         last = min(gap_last + LEAD * FPS, blocks[half][1])
         name = "gap{:02d}.mp4".format(rank)
-        cut(video, os.path.join(OUT_DIR, name), first, last, gap_first, gap_last)
-        rows.append({"clip": name, "half": half, "ball lost at": match_clock(half, gap_first),
+        if not args.index_only:
+            cut(video, os.path.join(out_dir, name), first, last, gap_first, gap_last)
+            print("  cut {} of {}".format(rank, len(gaps)))
+        rows.append({"clip": name, "half": half,
+                     "ball lost at": match_clock(half, gap_first),
+                     "ball returns at": match_clock(half, gap_last + 1),
                      "missing for (s)": round((gap_last - gap_first + 1) / FPS, 1),
+                     "red bar starts in clip at (s)": round((gap_first - first) / FPS, 1),
                      "cause (stoppage / crowd / air / off-camera / visible)": ""})
-        print("  cut {} of {}".format(rank, len(gaps)))
 
-    with open(os.path.join(OUT_DIR, "index.csv"), "w", newline="") as handle:
+    with open(os.path.join(out_dir, "index.csv"), "w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
 
     total = sum(r["missing for (s)"] for r in rows)
     print("\n{} clips in {}, covering {:.0f} s of missing ball. Index: index.csv".format(
-        len(rows), os.path.relpath(OUT_DIR, ROOT), total))
+        len(rows), out_dir, total))
