@@ -30,11 +30,37 @@ nothing.
 
 - The truth agrees with Smart Tagging only ~70% (attacking phases) / 75% (defending). That is the
   realistic ceiling for this check, not 100%.
-- Baselines call far too much dead ball over the full match: 32–41% D against ~20% in the truth,
-  because they write D on every missing-ball frame. First thing to fix in Phase 2.
+- Baselines call 32–41% D over the full match against ~20% in the public truth, because they
+  write D on every missing-ball frame. **Corrected 2026-10-24:** the 20% comes from 5 calm
+  minutes; the full match has goals, a hydration break and the end of the 1st half, so its real
+  D share is probably higher. The baselines' D share is not necessarily too high; the problem is
+  *which* frames they call D (see the gap findings below).
 - In the public window, during ball gaps the truth is ~56% D, ~44% A, ~1% H (small sample).
 
 ### 2026-10-23 · Gap clips
 
 The 15 longest blackouts cover 1,007 s, 39% of all missing-ball time. Watching them (~17 min)
 tells us what a large share of the problem is.
+
+### 2026-10-24 · What the ball blackouts are
+
+Watching the longest clips showed one dominant pattern: **the tracker drops the ball when play
+stops, even when the ball is plainly visible** (on the spot, in a player's hands), and picks it
+up again when play restarts. The long blackouts were stoppages: goals and the wait for kickoff,
+fouls and free kicks, a penalty, a drinks break, the end of a half, goal kicks, corners. A few
+were real occlusions in live play, and some long ones contain live play inside them (a corner
+delivered and fought over before the ball reappears).
+
+Checked against data we are allowed to measure:
+
+| | |
+|---|---|
+| Gaps > 20 s | 44 gaps, 67% of all missing-ball time |
+| Mean player speed: ball visible / gaps > 20 s / gaps ≤ 20 s | 2.16 / 0.99 / 1.53 m/s |
+| Gaps ending within 5 s of a tagged set piece: > 20 s vs shorter | 25% vs 5–9% |
+| Public truth inside the 4 gaps of 5–15 s | 2 fully live (A), 1 mostly D, 1 fully D |
+
+Working rule for Phase 2: **long blackout + slow players ≈ stoppage**; medium blackouts are
+mixed and need player movement to decide; short ones are usually live play. Edges matter: a
+blackout often starts at the moment play stops and ends at the restart, but sometimes ends while
+the restart is still being prepared, and long ones can hide live play.
