@@ -9,9 +9,11 @@ them -- and whether building our own ball detector is worth it. Only watching te
     python scripts/gap_clips.py --out ~/Downloads/mtah_gap_clips --index-only
 
 Each clip runs from LEAD seconds before the ball disappears to LEAD seconds after it returns. A
-red bar across the top of the picture marks the frames where the tracker has no ball. Clips and
-an index (clip name, half, match clock, length) go to data/derived/clips/ -- local only: they are
-gitignored, the guard blocks video files, and they must never be shared publicly.
+red bar across the top of the picture marks EVERY frame where the tracker has no ball -- the
+clip's own gap and any neighbouring one inside the clip. Clips and an index (clip name, half,
+match clock, length) go to data/derived/clips/ -- local only: they are gitignored, the guard
+blocks video files, and they must never be shared publicly. An existing index.csv is never
+overwritten (it may hold your notes) unless you pass --index-only.
 
 HOW TO USE WHAT YOU SEE. Write general patterns in docs/football-notes.md ("long gaps where
 players walk are stoppages"), and we turn patterns into rules. Never encode a specific gap of this
@@ -41,7 +43,7 @@ FPS = GAMES[GAME]["fps"]
 LEAD = 3  # seconds of context either side of the gap
 OUT_DIR = os.path.join(DERIVED_DIR, "clips")
 WIDTH = 1280  # downscaled from 1920 to keep the clips small
-BAR = "drawbox=x=0:y=0:w=iw:h=ih/14:color=red@0.85:t=fill:enable='between(n,{},{})'"
+BAR = "drawbox=x=0:y=0:w=iw:h=ih/14:color=red@0.85:t=fill:enable='{}'"
 # Match clock zero of each half: the kickoffs (FAQ.md), so the clock reads like the broadcast's.
 CLOCK_ZERO = {1: half_video_blocks(GAME)[0][1], 2: SECOND_HALF_KICKOFF}
 CLOCK_OFFSET_MIN = {1: 0, 2: 45}
@@ -64,9 +66,11 @@ def match_clock(half, frame):
     return "{}'{:02d}".format(minutes, int(seconds % 60)) if seconds >= 0 else "pre-kickoff"
 
 
-def cut(video, out_path, first, last, gap_first, gap_last):
-    """Re-encode [first, last] with the red bar over the gap frames (frame numbers in the clip)."""
-    bar = BAR.format(gap_first - first, gap_last - first)
+def cut(video, out_path, first, last, all_gaps):
+    """Re-encode [first, last] with the red bar over every missing-ball frame inside it."""
+    spans = ["between(n,{},{})".format(max(a, first) - first, min(b, last) - first)
+             for _, a, b in all_gaps if a <= last and b >= first]
+    bar = BAR.format("+".join(spans) or "0")
     subprocess.run(
         ["ffmpeg", "-v", "error", "-y", "-ss", "{:.2f}".format(first / FPS), "-i", video,
          "-frames:v", str(last - first + 1), "-an",
@@ -88,7 +92,8 @@ if __name__ == '__main__':
     if not args.index_only and not os.path.isfile(video):
         sys.exit("no video at {} -- see SETUP.md".format(video))
 
-    gaps = sorted(ball_gaps(load_tracking()["ball"]), key=lambda g: g[1] - g[2])[:args.top]
+    all_gaps = ball_gaps(load_tracking()["ball"])
+    gaps = sorted(all_gaps, key=lambda g: g[1] - g[2])[:args.top]
     os.makedirs(out_dir, exist_ok=True)
     blocks = dict((half, (first, last)) for half, first, last in half_video_blocks(GAME))
 
@@ -98,7 +103,7 @@ if __name__ == '__main__':
         last = min(gap_last + LEAD * FPS, blocks[half][1])
         name = "gap{:02d}.mp4".format(rank)
         if not args.index_only:
-            cut(video, os.path.join(out_dir, name), first, last, gap_first, gap_last)
+            cut(video, os.path.join(out_dir, name), first, last, all_gaps)
             print("  cut {} of {}".format(rank, len(gaps)))
         rows.append({"clip": name, "half": half,
                      "ball lost at": match_clock(half, gap_first),
@@ -107,11 +112,14 @@ if __name__ == '__main__':
                      "red bar starts in clip at (s)": round((gap_first - first) / FPS, 1),
                      "cause (stoppage / crowd / air / off-camera / visible)": ""})
 
-    with open(os.path.join(out_dir, "index.csv"), "w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
+    index = os.path.join(out_dir, "index.csv")
+    if args.index_only or not os.path.isfile(index):
+        with open(index, "w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+    else:
+        print("  kept the existing index.csv (it may hold notes); --index-only rewrites it")
 
     total = sum(r["missing for (s)"] for r in rows)
-    print("\n{} clips in {}, covering {:.0f} s of missing ball. Index: index.csv".format(
-        len(rows), out_dir, total))
+    print("\n{} clips in {}, covering {:.0f} s of missing ball.".format(len(rows), out_dir, total))
