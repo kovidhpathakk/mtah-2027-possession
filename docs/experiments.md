@@ -61,6 +61,17 @@ Checked against data we are allowed to measure:
 | Gaps ending within 5 s of a tagged set piece: > 20 s vs shorter | 25% vs 5–9% |
 | Public truth inside the 4 gaps of 5–15 s | 2 fully live (A), 1 mostly D, 1 fully D |
 
+**Update after web research (docs/football-notes.md):** ball-in-play in LaLiga is ~54–56 min, so
+dead ball is probably ~40–45% of graded frames, not ~20%. The baselines' and v1's 32–34% D is
+likely too LOW. Restarts take ~12–27 s on average, so many medium blackouts are probably
+restarts; v1's "medium blackout is dead only if players are slow" is likely too strict.
+
+**Ball speed (2026-10-24):** the tracker's ball-speed field is filled on only 8.7% of visible
+frames, so compute it from position changes. On visible-ball frames of the public window: live
+ball median 6.2 m/s, team 2.32 m/s; dead ball 2.7 m/s, team 1.22 m/s. "Ball < 2 m/s and team
+< 1.3 m/s" catches ~22% of visible dead frames at 0.2% false alarms. A real signal but not
+enough on its own; combine it with ball position and tags.
+
 Working rule for Phase 2: **long blackout + slow players ≈ stoppage**; medium blackouts are
 mixed and need player movement to decide; short ones are usually live play. Edges matter: a
 blackout often starts at the moment play stops and ends at the restart, but sometimes ends while
