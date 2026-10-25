@@ -1,0 +1,134 @@
+{
+  "base_experiment_config": {
+    "bootstrap_draws": 1000,
+    "maximum_median_speed_mps": 1.5,
+    "minimum_gap_frames": 250,
+    "minimum_slow_fraction": 0.8,
+    "minimum_valid_players": 12,
+    "smoothing_half_window": 50
+  },
+  "candidate_sha256": "e8c7227fac29f26875472f9b9a87d5c21818cdee5bbc82ce76520e2f9137894d",
+  "config": {
+    "maximum_stationary_ball_speed_mps": 0.5,
+    "minimum_moving_ball_speed_mps": 2.0,
+    "minimum_moving_frames": 5,
+    "minimum_quiet_frames": 25,
+    "position_speed_minimum_differences": 3,
+    "position_speed_window_frames": 5,
+    "review_context_seconds": 5,
+    "review_merge_gap_frames": 50,
+    "tag_margin_frames": 50
+  },
+  "diagnostics": {
+    "ball_detected_frames_all_video": 113488,
+    "ball_detected_frames_graded": 94214,
+    "ball_frames_with_position_speed_graded": 93767,
+    "ball_frames_with_provided_speed_all_video": 9909,
+    "ball_frames_with_provided_speed_graded": 7377,
+    "changed_frames_ball_missing": 500,
+    "distinct_restart_estimates": 30,
+    "frames_changed_from_experiment_003": 500,
+    "long_gaps": 79,
+    "long_gaps_with_restart_support": 30,
+    "provided_speed_attempt": {
+      "distinct_restart_estimates": 0,
+      "set_piece_tags": 59,
+      "supported_dead_frames": 0,
+      "tags_overlapping_long_gaps": 44,
+      "tags_with_quiet_then_moving_ball": 0,
+      "tags_with_restart_evidence": 0,
+      "tags_with_sustained_moving_ball": 6
+    },
+    "public_changed_frames": 0,
+    "public_errors_corrected": 0,
+    "public_errors_introduced": 0,
+    "review_created": true,
+    "review_windows": 10,
+    "set_piece_tags": 59,
+    "speed_rejected_gaps_with_restart_support": 10,
+    "supported_dead_frames": 7102,
+    "tags_overlapping_long_gaps": 44,
+    "tags_with_quiet_then_moving_ball": 43,
+    "tags_with_restart_evidence": 32,
+    "tags_with_sustained_moving_ball": 58
+  },
+  "provenance": {
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "python": "3.12.4",
+    "source_sha256": {
+      "evaluation/possession_metrics.py": "341bad48904b489d6e875397b27687f5d6a4d22a397f3dc8af3a00d48f16874d",
+      "experiments/003_player_speed/run.py": "afce38ab8b270aee8048b0bddf838a238fe8684deb35e6a1977871e5661ec4c6",
+      "experiments/004_tagged_restarts/run.py": "ccb2a959d938460dfc57b600627c833126b9f07f4f9be14d81c9b4e55a15828f",
+      "scripts/clip_reviewer.py": "0a2fe99cad2c83d5466e95afe190ec9a90743eea3aaa4b078458a19371470447",
+      "starter/baseline.py": "84d8a414fb1bdf8c7e1fbe4a8789fe6f9cc0c2cccec4685201285b75dbc0cfe6",
+      "starter/load_smart_tagging.py": "cacfe90acf1deb37b3aa3e4666d6a9d5595c1766d59fe24c9150e1a1d51d0c64"
+    }
+  },
+  "results": {
+    "experiment_003": {
+      "full_dead_share": 0.35483485147019017,
+      "full_mean_possession_seconds": 7.386594594594595,
+      "full_possessions": 555,
+      "public_dead_precision": 0.7162629757785467,
+      "public_dead_recall": 0.28182437031994556,
+      "public_macro_f1": 0.6521656414942484,
+      "public_missed_transitions": 17,
+      "public_possessions": 26,
+      "public_spell_bootstrap_5_95": [
+        0.21395348837209305,
+        0.4558139534883721
+      ],
+      "public_spell_f1": 0.33488372093023255,
+      "public_spurious_transitions": 26
+    },
+    "position_speed": {
+      "full_dead_share": 0.35798233631505066,
+      "full_mean_possession_seconds": 7.458062157221207,
+      "full_possessions": 547,
+      "public_dead_precision": 0.7162629757785467,
+      "public_dead_recall": 0.28182437031994556,
+      "public_macro_f1": 0.6521656414942484,
+      "public_missed_transitions": 17,
+      "public_possessions": 26,
+      "public_spell_bootstrap_5_95": [
+        0.21395348837209305,
+        0.4558139534883721
+      ],
+      "public_spell_f1": 0.33488372093023255,
+      "public_spurious_transitions": 26
+    },
+    "provided_speed": {
+      "full_dead_share": 0.35483485147019017,
+      "full_mean_possession_seconds": 7.386594594594595,
+      "full_possessions": 555,
+      "public_dead_precision": 0.7162629757785467,
+      "public_dead_recall": 0.28182437031994556,
+      "public_macro_f1": 0.6521656414942484,
+      "public_missed_transitions": 17,
+      "public_possessions": 26,
+      "public_spell_bootstrap_5_95": [
+        0.21395348837209305,
+        0.4558139534883721
+      ],
+      "public_spell_f1": 0.33488372093023255,
+      "public_spurious_transitions": 26
+    },
+    "smooth50": {
+      "full_dead_share": 0.32336000302158546,
+      "full_mean_possession_seconds": 7.238316498316499,
+      "full_possessions": 594,
+      "public_dead_precision": 0.6569037656903766,
+      "public_dead_recall": 0.2137508509189925,
+      "public_macro_f1": 0.6207331924027959,
+      "public_missed_transitions": 18,
+      "public_possessions": 26,
+      "public_spell_bootstrap_5_95": [
+        0.21395348837209305,
+        0.44651162790697674
+      ],
+      "public_spell_f1": 0.3255813953488372,
+      "public_spurious_transitions": 27
+    }
+  }
+}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src 'self' file:; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+  <title>Local clip reviewer</title>
+  <style>
+    :root { color-scheme: dark; font: 15px/1.5 system-ui,sans-serif; background:#0d131a; color:#edf1f5; }
+    * { box-sizing:border-box; } body { margin:0; } header { padding:22px 28px 16px; border-bottom:1px solid #293645; }
+    h1 { font-size:24px; margin:0 0 6px; } p { margin:7px 0; } .muted { color:#a8b8c8; }
+    main { display:grid; grid-template-columns:270px minmax(0,1fr); gap:22px; padding:22px 28px; }
+    nav { max-height:78vh; overflow:auto; } button,select { color:inherit; font:inherit; background:#182532; border:1px solid #435970; border-radius:8px; padding:9px 13px; cursor:pointer; }
+    button:hover { background:#25394c; } button:disabled { opacity:.4; cursor:default; }
+    button:focus-visible,select:focus-visible { outline:2px solid #8acbb0; outline-offset:2px; }
+    .clip { display:block; width:100%; text-align:left; margin:0 0 7px; }
+    .clip[aria-current="true"] { background:#244f43; border-color:#8acbb0; }
+    .clip span { display:block; font-size:12px; color:#b9c9d8; }
+    video { display:block; width:100%; max-height:65vh; background:#000; border-radius:10px; margin:12px 0; }
+    h2 { font-size:19px; margin:0; } .controls { display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin:12px 0; }
+    .status { min-height:24px; color:#8acbb0; } .note { padding:12px 16px; margin-top:20px; border-left:3px solid #8acbb0; background:#14212c; }
+    @media(max-width:760px) { main { grid-template-columns:1fr; padding:14px; } header {padding:16px;} nav {max-height:210px;} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="heading">Local clip reviewer</h1>
+    <p class="muted">Times refer to this video's elapsed time. Other camera recordings may have different timelines.</p>
+  </header>
+  <main>
+    <nav id="clips" aria-label="Review clips"></nav>
+    <section>
+      <h2 id="title"></h2>
+      <p id="timing" class="muted"></p>
+      <video id="video" controls preload="metadata" playsinline></video>
+      <div class="controls">
+        <button id="previous">Previous</button><button id="play">Play review window</button>
+        <button id="start">Jump to clip start</button><button id="next">Next</button>
+        <label>Speed <select id="rate"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+      </div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <p id="detail" class="muted"></p>
+      <div class="note">
+        <p>Review the clip and its surrounding context to understand model behavior. Keep restricted video and generated timestamp lists local.</p>
+        <p class="muted">Playback pauses at the end of each review window. No clips are exported or uploaded.</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    const data = __REVIEW_PAYLOAD__;
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
+    const nav = document.getElementById('clips');
+    document.getElementById('heading').textContent = data.title;
+    document.title = data.title + ' · Local clip reviewer';
+    let selected = 0;
+    let pendingSeek = null;
+    let pendingPlay = false;
+    const buttons = data.clips.map((clip, index) => {
+      const button = document.createElement('button');
+      button.className = 'clip';
+      const name = document.createElement('strong');
+      name.textContent = `${clip.name} · ${clip.duration_seconds.toFixed(1)} seconds`;
+      const detail = document.createElement('span');
+      detail.textContent = clip.start;
+      button.append(name, detail);
+      button.addEventListener('click', () => selectClip(index));
+      nav.append(button);
+      return button;
+    });
+    function seek(seconds, play) {
+      pendingSeek = seconds;
+      pendingPlay = play;
+      if (video.readyState < 1) { status.textContent = 'Loading local video metadata…'; return; }
+      video.currentTime = Math.min(seconds, video.duration);
+      pendingSeek = null;
+      if (play) video.play().catch(() => { status.textContent = 'Press the video play control to start.'; });
+    }
+    function selectClip(index) {
+      video.pause();
+      selected = index;
+      const clip = data.clips[index];
+      buttons.forEach((button, i) => button.setAttribute('aria-current', String(i === index)));
+      document.getElementById('title').textContent = `${clip.name} (${index + 1} of ${data.clips.length})`;
+      document.getElementById('timing').textContent = `Clip ${clip.start} – ${clip.end} | Review ${clip.review_start} – ${clip.review_end}`;
+      document.getElementById('detail').textContent = clip.detail;
+      document.getElementById('previous').disabled = index === 0;
+      document.getElementById('next').disabled = index === data.clips.length - 1;
+      status.textContent = 'Ready. Press “Play review window”.';
+      seek(clip.review_start_seconds, false);
+    }
+    video.addEventListener('loadedmetadata', () => {
+      if (pendingSeek !== null) seek(pendingSeek, pendingPlay);
+      if (data.expectedDuration !== null && Math.abs(video.duration - data.expectedDuration) > 1) {
+        status.textContent = 'Video duration differs from the reference. Check the selected recording.';
+      } else {
+        status.textContent = 'Local video ready.';
+      }
+    });
+    video.addEventListener('timeupdate', () => {
+      const clip = data.clips[selected];
+      if (!video.paused && video.currentTime >= clip.review_end_seconds) {
+        video.pause(); status.textContent = 'Review window finished. Replay or select another clip.';
+      }
+    });
+    video.addEventListener('error', () => {
+      status.textContent = 'The browser could not load the local video. Use timestamps.md with your usual video player.';
+    });
+    document.getElementById('play').addEventListener('click', () => seek(data.clips[selected].review_start_seconds, true));
+    document.getElementById('start').addEventListener('click', () => seek(data.clips[selected].start_seconds, true));
+    document.getElementById('previous').addEventListener('click', () => selectClip(Math.max(0, selected - 1)));
+    document.getElementById('next').addEventListener('click', () => selectClip(Math.min(data.clips.length - 1, selected + 1)));
+    document.getElementById('rate').addEventListener('change', (event) => { video.playbackRate = Number(event.target.value); });
+    video.src = data.video;
+    if (data.clips.length) selectClip(0);
+  </script>
+</body>
+</html>
