@@ -27,6 +27,9 @@ Last updated: 2026-10-26.
 | M12 | **Decoder** (HMM/Viterbi): the most believable H/A/D sequence, weighing every clue with trust learned on practice | our design | next 6 | |
 | M13 | Stop the vote at stoppages | v2 testing | dropped | slightly worse in every scenario |
 | M14 | Visible-ball stoppages where the ball is carried, not still | v2 weaknesses | planned | e.g. walking to a throw-in |
+| M15 | **Learned possession model**: a sequence model trained on the DFL matches' per-frame possession, as in Borghesi et al. 2023 (Temporal Convolutional Networks on tracking data, *Expert Systems with Applications*) | research 2026-10-26 | planned | DFL gives ~1.4 million labelled frames; leave-one-match-out testing |
+| M16 | **Ball-free possession and events** with a CRF/Viterbi over player-to-player paths, as in PathCRF (arXiv 2602.12080, KDD'26) | research 2026-10-26 | planned | targets live play with the ball missing, and fits the decoder (M12) |
+| M17 | Wider research pass: MLSA/ECML sports-analytics workshops, SoccerNet game-state, 2024-26 possession and event-detection papers | Kovidh, 2026-10-26 | planned | |
 
 ## Sources and clues
 
@@ -61,6 +64,7 @@ Last updated: 2026-10-26.
 | # | Idea | Status | Notes |
 |---|---|---|---|
 | P1 | Practice-match test bench (open data, fault kit, calibration) | done | `scripts/open_test.py` |
+| P1b | Fault kit, missing faults: wrong team labels (~2% of objects, ~5% in the boxes) and large ball errors (> 5 m on ~10% of frames) | planned | found answering "is the damage like ours?"; the kit now has 0.3 m ball noise only |
 | P2 | Organiser questions: issue #14 (saving model outputs; clips → rules), #11 | open | check each session; upstream RULES now allow people to watch the video |
 | P3 | Merge the organisers' latest docs (23 Oct) into our branch | planned | offered, not done |
 | P4 | Reproducible pipeline: `run.py` regenerates every derived input (alignment, transcript, model outputs) from a clean clone | planned | needed before the final submission |
