@@ -14,6 +14,26 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Track T pilot: an off-the-shelf ball detector cannot rebuild the ball track
+
+Roboflow "sports" ball detector (YOLOv8x, trained on DFL Bundesliga Data Shootout footage; approved
+by Kovidh, scanned before loading), CPU, 1.6 s per frame (`scripts/ball_pilot.py`):
+
+| Test | Result |
+|---|---|
+| A. 80 live frames with a provided ball: a detection within 2 m / the most confident detection is the ball | 50% / 32% |
+| A with a 480×270 crop around the expected ball, enlarged (40 frames) | 55% / 50% |
+| A with a 320×180 crop | 18% / 15% |
+| B. 80 live frames without a provided ball: something detected on the pitch / with confidence ≥ 0.5 | 72% / 31%, median 14 m from where the ball was last seen |
+| C. 6 runs of 50 consecutive frames around control moments: sharp velocity changes, detected vs provided | 7% vs 11% (detected on 72% of frames) |
+
+On the wide tactical view the ball is a few pixels across and the model (trained on broadcast-style
+footage) finds it about half the time. Not enough to build our own track. Test C cannot settle
+whether the provided ball is smoothed: kicks blur the ball, which is when detection fails; A3 stays
+unconfirmed (the realistic kit is justified by the realism report either way). Track T parked; the
+broadcast video (ball several times larger) remains an option if disk space allows a re-download.
+
+
 ### 2026-10-26 · Realism report: practice data now matches ours on 17 of 18 measures
 
 `scripts/realism_report.py` compares our match with the 8 practice matches (clean and damaged,

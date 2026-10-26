@@ -49,9 +49,9 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | Step | Experiment | Rows | Status |
 |---|---|---|---|
 | T0 | **Realism report**: our match vs damaged practice on every measure, flagging gaps | P1d | ✅ 17 of 18 measures within 1.5× after copying missing-player episodes |
-| T1 | **Football-trained detector pilot**: accuracy where the provided ball exists, ball found in gaps, smoothing check on consecutive frames | V9, T1, V17 | ⏳ running (`scripts/ball_pilot.py`; Roboflow ball model approved by Kovidh and scanned) |
+| T1 | Football-trained detector pilot | V9, T1, V17 | ✅ done: **not good enough** on the wide view (ball within 2 m on 50% of frames; 55% with a zoomed crop); smoothing check inconclusive |
 | T2 | **Confirm the smoothing from the video**: detector on runs of consecutive frames around kicks; compare the real ball's speed changes with the recorded ones | V17 | with T1 |
-| T3 | If fast and accurate: **our own ball track** for every graded frame (detector + homography + a simple tracker joining detections), overnight | T3 | after T1 |
+| T3 | Our own ball track from the video | T3 | **parked**: needs a detector that finds the ball reliably; route left: the broadcast video (ball several times larger), if disk space allows a 14 GB re-download |
 | T4 | v4's touch rule and the trained models on our own ball track | T4 | after T3 |
 | T5 | Player re-detection (missing players), team labels from shirt colours | V8, V15 | later |
 
@@ -184,9 +184,9 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | V13 | Qwen3-VL 2B pilot with crops and sequences | planned | fits in memory; weaker |
 | V14 | Detector finds the ball at restart moments: which spot (touchline, corner flag, goal area, centre) | planned (dive 2) | |
 | V15 | Detector counts people on the pitch to measure missing players | planned, low priority | |
-| V17 | **Confirm from the video that the provided ball path is smoothed** (detector on consecutive frames around kicks) | planned (track T, with T1) | assumption A3 |
+| V17 | Confirm from the video that the provided ball path is smoothed | done: inconclusive | the detector loses the ball in kicks (motion blur); A3 stays unconfirmed |
 | T1 | Football-trained detector pilot on ~200 frames: speed, agreement with the provided ball, ball found in gaps | next | Kovidh's suggestion: improve the tracking itself |
-| T3 | Our own ball track from the video for every graded frame (detector + homography + a simple tracker) | planned (after T1) | could restore sharp touches and fill gaps |
+| T3 | Our own ball track from the video for every graded frame | parked | off-the-shelf detector finds the ball ~50% of the time on the wide view; broadcast route needs disk space |
 | T4 | Methods re-run on our own ball track | planned (after T3) | |
 | V16 | **Overlay clips of our match for Kovidh** (tracking drawn on the tactical video) for each dive's error types | next (dive 1) | Kovidh watches and describes in general terms |
 | V9 | **Best vision models that fit the laptop**: Qwen3-VL 4B (8B needs ~12 GB); football-trained detectors (YOLOv11 "soccana": players/ball/referees; RF-DETR ball) | planned (after the pilot) | check licences and that none was trained on our match |
