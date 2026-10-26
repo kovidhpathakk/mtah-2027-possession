@@ -91,7 +91,8 @@ long jobs in the background whenever the machine is free.
 |---|---|---|---|
 | V1 | Detector audit of the tracking (420 frames) | done | ghost not a person; ball visible in ~2/3 of gap frames |
 | V2 | **Detector finds the ball inside tracking gaps** | next (background, after S3) | where the ball is during gaps: restart spot? moving? |
-| V3 | Local vision-language model: "is play stopped?" on chosen frames | now (pilot, 30 frames) | qwen2.5vl:3b via Ollama; Kovidh approved 2026-10-26 |
+| V3 | Local vision-language model: "is play stopped?" on chosen frames | done (pilot) | **failed**: qwen2.5vl:3b says "stopped" on 100% of frames in every group; 26 s per frame. The wide view is illegible to it |
+| V12 | **Vision pilot 2**: crops around the action (tracking + homography), 2-3 frames a second apart, Qwen3-VL 4B | next (video) | same 30-frame groups, so the two pilots compare directly |
 | V9 | **Best vision models that fit the laptop**: Qwen3-VL 4B (8B needs ~12 GB); football-trained detectors (YOLOv11 "soccana": players/ball/referees; RF-DETR ball) | planned (after the pilot) | check licences and that none was trained on our match |
 | V10 | **Re-download the broadcast video** and run vision models on its close-ups (mapped to tactical time by the alignment) | planned, Kovidh to download | players and ball are far larger than in the wide tactical view |
 | V11 | Cloud GPU for bigger vision models | needs the organisers' OK | the FAQ forbids giving the video to third-party hosted or cloud LLMs; a self-run model on a rented GPU is unclear: ask before trying |

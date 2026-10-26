@@ -13,6 +13,21 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Vision pilot: a small model cannot read the wide tactical view
+
+`scripts/vision_pilot.py`, qwen2.5vl:3b via Ollama, 30 frames (10 per group), 26 s per frame:
+
+| v3's call | model says "stopped" | sees the ball | ball in the air |
+|---|---|---|---|
+| dead | 100% | 20% | 0% |
+| live, ball at feet | 100% | 70% | 0% |
+| live, ball missing | 100% | 0% | 0% |
+
+It calls every frame stopped. In the wide tactical view players are a few pixels tall; one still
+frame cannot show movement. Next pilot: crops around the action (tracking + homography give where),
+2-3 frames about a second apart, Qwen3-VL 4B; broadcast close-ups if re-downloaded.
+
+
 ### 2026-10-26 · Harder, more honest practice damage
 
 Added the two faults the kit lacked, at our match's measured rates: team-label swaps on 1.8% of
