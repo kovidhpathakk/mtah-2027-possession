@@ -13,9 +13,8 @@ Read this first when picking the project up, together with CLAUDE.md, **docs/pro
   plan needs the 14 GB broadcast video any more.
 - **Insurance submission:** `python run.py --name insurance_baseline` → baseline + match rules,
   valid. To be uploaded to the form when the link arrives.
-- **Best model so far:** `blackout_v1` (public spellF1 0.362, damage test 0.277 vs baseline 0.326 /
-  0.226). Its thresholds were partly informed by watching clips; v2 re-sets every threshold on
-  other matches.
+- **Best model so far:** `v2` (practice matches 0.31 vs v1 0.29 vs baseline 0.26; public 0.371;
+  dead ball 40% on our match). `evaluation/results/ours_v2.csv` is valid and reproducible.
 - **Tools:** damage test, sanity report, gap clips, and (new) `audit_tracking.py`,
   `audit_tagging.py`, `extract_audio.py`, `align_broadcast.py`.
 
@@ -55,7 +54,8 @@ Read this first when picking the project up, together with CLAUDE.md, **docs/pro
 | A | Data audit (tracking, Smart Tagging, broadcast alignment, confirmation by second tracker) | ✅ 2026-10-25 |
 | B | Open data: downloaded, loaded with H/A/D labels, control audit, fault kit (`possession/damage.py`), 8-match test (`scripts/open_test.py`), calibrated against the published baselines | ✅ 2026-10-25 |
 | A+ | Video audit with a local detector (`scripts/video_audit.py`, `.venv-video`) | ✅ 2026-10-25 |
-| C | v2: clean-up (motionless ghosts, cap 11, ball jumps) + restart detector + possession logic | beats v1 on the new test |
+| C | v2: clean-up + stoppage rules (out, still, gaps) + flicker tidy-up | ✅ 2026-10-25, beats v1 in every scenario |
+| C2 | v2.1: who restarts, possession logic | beats v2 |
 | D | Decoder (HMM/Viterbi) over v2's clues | beats v2 |
 | E | Audio: whistle detector, then commentary (Whisper + small local LLM) | each clue helps, or is dropped |
 | F | Pilots: vision model "is play stopped?", Ball Radar | if time allows |

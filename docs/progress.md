@@ -16,11 +16,27 @@ Last updated: 2026-10-25.
 
 | | |
 |---|---|
-| **Best model** | **v1** (`blackout_v1`): open-data test 0.23–0.35, public 0.362. Baseline: 0.21–0.32, 0.326 |
-| **Safe entry** | `insurance_baseline`, validated, ready to upload |
-| **Working on** | v2: restart detector |
+| **Best model** | **v2**: practice matches 0.31, quiz 0.371 (v1: 0.29, 0.362; baseline: 0.26, 0.326) |
+| **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
+| **Working on** | v2.1: who restarts, possession logic |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Deadline** | 17 November 2026 |
+
+## How to read the scores
+
+Every score is the competition's mark, **spellF1**, from 0 (random guessing) to 1 (perfect): roughly
+the share of real possessions we got right (right team, about the right start and end), minus a
+penalty for invented ones. Example: 4 real possessions; we find 3 and invent 1 → about 0.75.
+Ours are around 0.3: we get roughly 1 possession in 3 properly right. The organisers' own
+baseline scored 0.243 on the real match.
+
+We get marks from three "exams":
+
+| Exam | What it is | Who marks it | Use |
+|---|---|---|---|
+| **Final** | our full match, 106 min | only the organisers, at the end | the ranking; we never see it before |
+| **Practice** | 8 other matches with full answers, scuffed up to look like our tracker | us, any time | **how we compare models**; one mark = the average of three ways of scuffing |
+| **Quiz** | the 5 public minutes of our match, 17 possessions | us | a sanity look only; we may not study for it |
 
 ## Words used here
 
@@ -38,13 +54,15 @@ Last updated: 2026-10-25.
 
 ## Model versions
 
-| Version | Open-data test (stoppage / mixed / random) | Public 5 min | Real full match | Status |
-|---|---|---|---|---|
-| *organisers' baseline (yardstick)* | *0.32 / 0.25 / 0.21* | *0.326* | *0.243* | *the floor to beat* |
-| `insurance_baseline` | as baseline | 0.326 | – | ready to upload |
-| **`blackout_v1`** | **0.35 / 0.28 / 0.23** | **0.362** | – | **current best** |
-| `blackout_v1_clean` | 0.35 / 0.27 / 0.22 | – | – | no gain; its clean-up goes into v2 |
-| v2 | – | – | – | in progress |
+Code names in brackets are what the scripts call each model.
+
+| Version | Practice (avg) | Practice: stoppage / mixed / random | Quiz | Final | Dead ball on our match | Status |
+|---|---|---|---|---|---|---|
+| *organisers' baseline* (`baseline`) | *0.26* | *0.32 / 0.25 / 0.22* | *0.326* | *0.243* | *32%* | *yardstick* |
+| insurance (`insurance_baseline`) | 0.26 | as baseline | 0.326 | – | 32% | ready to upload |
+| v1 (`blackout_v1`) | 0.29 | 0.35 / 0.27 / 0.23 | 0.362 | – | 32% | superseded |
+| v1 + clean-up (`blackout_v1_clean`) | 0.28 | 0.35 / 0.27 / 0.23 | – | – | – | no gain |
+| **v2** (`v2`) | **0.31** | **0.39 / 0.30 / 0.25** | **0.371** | – | **40%** | **current best** |
 
 ---
 
@@ -165,14 +183,40 @@ We also asked the organisers two questions (issue #14) and recorded decisions in
 **Result.** v1 beats the baseline in every scenario, by 0.01–0.03. Every method calls too little
 dead ball (27–39% against 43%).
 
-### Stage 6 · v2, in progress (from Oct 25)
+### Stage 6 · v2: find the stoppages (Oct 25)
 
-| Step | Status | Result |
-|---|---|---|
-| Clean-up: remove frozen objects and a team's 12th+ object | ✅ done | correct, but no score change: these objects rarely stand by the ball |
-| **Restart detector** (Vidal-Codina) | **next** | – |
-| Gap rule: dead unless the evidence says live | planned | – |
-| Possession logic (Link & Hoernig) | planned | – |
+**Why.** v1 called 35% of a match dead against ~43% in reality, missing stoppages where the ball
+stays visible and judging gaps on player speed alone.
+
+**What we did.**
+1. **Clean-up** (`possession/cleanup.py`): removed frozen objects (the ghost) and a team's 12th+
+   object. Correct, but no score change on its own.
+2. **Measured which clues mark a stoppage**, on the practice matches only, following
+   Vidal-Codina (a missing ball and restart positions mark dead ball):
+   - ball visible but standing still for 2 s or more: catches 96% of dead frames, 0.6% false alarms
+   - ball more than 1 m outside the lines: 99% dead
+   - ball gap with the players slow: 98–99% dead
+   - ball gap that starts or ends at a corner, a touchline or outside the lines: 79–100% dead
+   - a gap's length on its own: a weak clue
+3. **Built v2** (`possession/stoppages.py`) from those clues. Dead ball when the ball is out, or
+   still for 2 s, or in a gap of 1 s+ with slow players, at an edge, or lasting 20 s+. "Slow" is
+   relative to each match's own typical speed, because trackers differ. Otherwise the team comes
+   from the nearest-player vote, as before.
+4. **Found and fixed a flicker problem.** A ball lying near a line jumps in and out by
+   centimetres, and each "in" frame became a fake one-frame possession: 2,000 in one match. A
+   tidy-up step (short live islands inside a stoppage become dead; tiny dead blips become live)
+   fixed it.
+5. **Made the practice matches more realistic.** The added ball noise now drifts smoothly, like
+   real tracking errors, instead of jumping every frame.
+6. **Tried and dropped** "don't let the vote cross a stoppage": slightly worse everywhere.
+
+**Result.** Practice 0.31 (v1 0.29), better in every scenario; dead ball 42% against 43% in the
+answers. On our match: 40% dead, quiz 0.371, frame accuracy 0.66 (v1 0.52). The submission file
+is valid and rebuilds byte for byte.
+
+**Learned.** Getting the stoppages right is worth more than cleaning the tracking. The "still
+ball" clue helps hugely when the tracker keeps the ball in view (practice clean 0.35 → 0.45), but
+our tracker usually drops it, so on our match it helps less.
 
 ---
 
@@ -180,14 +224,13 @@ dead ball (27–39% against 43%).
 
 | # | Step | Why | Done when |
 |---|---|---|---|
-| 1 | **Restart detector**: throw-ins, corners, goal kicks, kickoffs from player and ball positions | The main fix for too little dead ball; also tells which team restarts | beats v1 in all three scenarios |
-| 2 | **Gap rule rethink** | Gaps are mostly stoppages | dead share moves towards ~43% without losing score |
-| 3 | **Possession logic** | Fewer false possessions | beats step 2 |
-| 4 | **Decoder** (HMM/Viterbi): the most believable H/A/D sequence for the whole match | Targets spellF1 directly | beats v2 |
-| 5 | **Whistle detector** on the audio | Marks stoppages the tracking misses | helps, or dropped |
-| 6 | **Commentary**: Whisper + a small local LLM → timed hints | Fouls, free kicks and who gets them | helps, or dropped |
-| 7 | Optional: vision model "is play stopped?", Ball Radar | Catch what nothing else sees | if time allows |
-| 8 | **Technical document** + final submission | Required deliverables | by 17 November |
+| 1 | **Who restarts**: give the restart to the team of the player who takes it (thrower, kicker) | After a stoppage the vote can pick the wrong team for the first seconds | beats v2 on practice |
+| 2 | **Possession logic** (Link & Hoernig): change team only on real control; duels don't flip | Fewer false team changes in live play | beats v2 on practice |
+| 3 | **Decoder** (HMM/Viterbi): the most believable H/A/D sequence for the whole match | Targets spellF1 directly | beats v2 |
+| 4 | **Whistle detector** on the audio | Marks stoppages the tracking misses | helps, or dropped |
+| 5 | **Commentary**: Whisper + a small local LLM → timed hints | Fouls, free kicks and who gets them | helps, or dropped |
+| 6 | Optional: vision model "is play stopped?", Ball Radar | Catch what nothing else sees | if time allows |
+| 7 | **Technical document** + final submission | Required deliverables | by 17 November |
 
 ## Open questions
 

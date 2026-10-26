@@ -16,7 +16,10 @@ Faults:
                             share is reached
                   mixed     the same with half the stoppages
                   random    gaps of our match's lengths anywhere (the old damage test's view)
-  ball noise    BALL_NOISE m of jitter (the two trackers' balls sit ~0.8 m apart)
+  ball noise    BALL_NOISE m of error that drifts smoothly over ~NOISE_SMOOTH frames. Tracking
+                errors are smooth, not independent per frame: our tracker's ball moves in steps of
+                a millimetre while sitting ~0.8 m from the broadcast tracker's. Independent
+                per-frame jitter would make a still ball look like it moves at ~4 m/s.
   missing       players dropped for a few seconds at a time, on our share of frames with fewer
                 than 18 objects
   extra         a near-duplicate of a player, on our share of frames with 12+ in a team
@@ -40,6 +43,7 @@ STOPPAGE_DROP = {"stoppage": 0.85, "mixed": 0.5}
 DROP_EARLY = (-0.5, 1.5)      # s after play stops that the ball vanishes (uniform range)
 RETURN_EARLY = (-1.5, 0.5)    # s relative to the restart that it comes back
 BALL_NOISE = 0.3              # m, per axis
+NOISE_SMOOTH = FPS            # frames over which the error drifts
 MISSING_PLAYERS = (2, 5)      # players dropped at once
 MISSING_RUN = (1, 10)         # s
 EXTRA_RUN = (1, 10)           # s
@@ -113,6 +117,15 @@ def _ball_gaps(labels, graded, scenario, profile, rng):
     return gone & graded
 
 
+def _smooth_noise(n, rng):
+    """(n, 2) error in metres: white noise averaged over NOISE_SMOOTH frames, rescaled so each
+    axis has a standard deviation of BALL_NOISE."""
+    kernel = np.ones(NOISE_SMOOTH) / NOISE_SMOOTH
+    raw = rng.normal(size=(n + NOISE_SMOOTH, 2))
+    smooth = np.stack([np.convolve(raw[:, k], kernel, mode="valid")[:n] for k in range(2)], axis=1)
+    return smooth / smooth.std(axis=0) * BALL_NOISE
+
+
 def damage(t, scenario, rng, profile):
     """A damaged copy of an external match `t` (from load_source). Labels are left untouched."""
     n, slots = t["players"].shape[:2]
@@ -121,7 +134,7 @@ def damage(t, scenario, rng, profile):
     labels = t["labels"]
     out = dict(t)
 
-    ball = t["ball"] + rng.normal(0, BALL_NOISE, size=t["ball"].shape) / pitch
+    ball = t["ball"] + _smooth_noise(len(t["ball"]), rng) / pitch
     ball[_ball_gaps(labels, graded, scenario, profile, rng)] = np.nan
     out["ball"] = ball
 

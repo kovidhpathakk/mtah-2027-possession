@@ -5,11 +5,38 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 | Date | Who | Branch | What changed | Public spellF1 / macroF1 | Damage-test spellF1 (mean ± spread) | Possessions (full match) | Mean length (s) | D share | Notes |
 |---|---|---|---|---|---|---|---|---|---|
+| 2026-10-25 | Claude | phase1-tools | **v2** (`possession/stoppages.py`): clean-up; dead if ball > 1 m out, ball still ≥ 2 s, or a gap ≥ 1 s with slow players / at an edge / ≥ 20 s; tidy flicker; plain ±2 s vote | 0.3714 / 0.6602 | 0.277 (0.193–0.358) | 496 | 7.6 | 40% | Open-data test 0.388 / 0.298 / 0.250 vs v1 0.349 / 0.272 / 0.233; D share 42% vs truth 43%. Byte-identical on rerun |
 | 2026-10-24 | Claude | phase1-tools | blackout_v1: long blackout = D, medium blackout D only if players slow (<1.0 m/s), otherwise hold the last team | 0.3619 / 0.5236 | 0.277 (0.190–0.354) | 510 | 8.4 | 32% | Better spellF1 on both tests, but predicts no D at all in the public window (truth 20%): its stoppages there are short or have the ball visible. macroF1 drops. Next: detect stoppages with the ball visible |
 | 2026-10-23 | Claude | phase1-tools | Insurance: baseline smooth50 + match rules (X outside halves, D before 2nd-half kickoff) | 0.3256 / 0.6207 | 0.226 (0.148–0.316) | 584 | 7.2 | 34% | Uploaded as our safety entry |
 | 2026-10-23 | — | main | Baseline smooth50, unchanged | 0.3256 / 0.6207 | 0.226 (0.148–0.316) | 594 | 7.2 | 32% | Reference. Full-match spellF1 0.2433 per EVALUATION.md |
 
 ## Findings
+
+### 2026-10-25 · v2: stoppages from ball position and play speed
+
+Clues measured on the open-data matches first (`possession/stoppages.py` docstring has the
+numbers): ball visible and still ≥ 2 s catches 96% of dead frames at 0.6% false alarms; ball
+> 1 m beyond a line is 99% dead; a ball gap with slow players is 98–99% dead; a gap that starts
+or ends at an edge is 79–100% dead.
+
+| Method | clean | stoppage | mixed | random | D share |
+|---|---|---|---|---|---|
+| blackout_v1 | 0.320 | 0.349 | 0.272 | 0.233 | 35% |
+| v2_gaps_only | 0.327 | 0.380 | 0.285 | 0.234 | 40% |
+| **v2** | **0.451** | **0.388** | **0.298** | **0.250** | **42%** |
+| v2_live_vote | 0.435 | 0.385 | 0.295 | 0.247 | 42% |
+
+- The "out" rule first created ~2,000 fake sub-second possessions per match: a ball lying near
+  a line flickers in and out. A tidy-up (live islands < 2 s inside a stoppage become dead; dead
+  blips < 0.5 s become live) fixed it.
+- The fault kit's ball noise was per-frame jitter, which made a still ball look like it moves at
+  ~4 m/s. It now drifts smoothly (same 0.3 m size); calibration against the published baselines
+  is unchanged. The "still" rule still adds nothing on damaged data, only on clean data (0.346 →
+  0.451): our tracker removes most dead balls, so its value on our match is uncertain.
+- Stopping the vote at stoppages scored slightly worse everywhere; v2 uses the plain vote.
+- On our match: D 40% (v1 32%), possessions 496, 92% of tagged set pieces contain D (v1 71%),
+  public 0.371 (v1 0.362), macroF1 0.660 (v1 0.524).
+
 
 ### 2026-10-25 · Video audit (detector run locally, 420 frames)
 
