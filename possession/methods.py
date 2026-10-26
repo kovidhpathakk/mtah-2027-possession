@@ -34,4 +34,4 @@ METHODS = {
     "baseline_smooth25": lambda tracking, frames=None: baseline.predict(tracking, 25, frames),
     "baseline_smooth125": lambda tracking, frames=None: baseline.predict(tracking, 125, frames),
 }
-DEFAULT_METHOD = "baseline"
+DEFAULT_METHOD = "v4"  # python run.py builds the current best model
