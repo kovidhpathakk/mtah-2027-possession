@@ -11,6 +11,27 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-25 · The open-data test (8 matches, our tracker's faults added)
+
+`python scripts/open_test.py`. spellF1, mean over 8 matches × 3 seeds:
+
+| Method | clean | stoppage | mixed | random | D share | real match |
+|---|---|---|---|---|---|---|
+| baseline | 0.316 | 0.316 | 0.251 | 0.212 | 36% | 0.243 |
+| baseline_smooth25 | 0.301 | 0.311 | 0.245 | 0.204 | 39% | 0.200 |
+| baseline_smooth125 | 0.228 | 0.217 | 0.190 | 0.174 | 27% | 0.224 |
+| baseline_raw | 0.097 | 0.062 | 0.050 | 0.041 | 43% | 0.049 |
+| blackout_v1 | 0.320 | 0.347 | 0.276 | 0.225 | 35% | – |
+| truth | | | | | 43% | |
+
+- **Calibration:** every scenario picks the right best baseline (the old 5-minute test picked
+  smooth125). "Mixed" and "random" sit closest to the real full-match scores; "stoppage" is too
+  kind. None reproduces smooth125 > smooth25 exactly. Judge new methods on all three.
+- blackout_v1 beats the baseline in every scenario, by 0.01–0.03: real but small.
+- Every method calls too little dead ball (27–39% vs 43%).
+- This replaces the public-window damage test for choosing between methods.
+
+
 ### 2026-10-25 · Open data loaded; control audit on 8 clean matches
 
 - DFL (7) and Metrica Game 3 load into our arrays with an H/A/D label per frame. DFL's dead-ball

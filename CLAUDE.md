@@ -41,8 +41,8 @@ matches is allowed.
   Write `X` outside them. Frames 110808..113741 are graded and are `D` (2nd half before kickoff).
 - Distances in metres: multiply normalised x by 105.3 and y by 68.0 first.
 - Inside the halves, always output `H`, `A` or `D`. `X` there never adds score.
-- Never tune on the public 5 minutes. Compare versions on the damage test and the full-match
-  sanity report; treat spellF1 differences under ~0.04 as noise.
+- Never tune on the public 5 minutes. Compare versions on the open-data test, the damage test and
+  the full-match sanity report; treat spellF1 differences under ~0.04 as noise.
 - Every submission must pass `python evaluation/validate_submission.py <file>` and must be
   reproducible from a clean clone, byte for byte: pinned dependencies, fixed seeds.
 - Match the style of the organisers' code: numpy/pandas, docstrings that explain why.
@@ -51,6 +51,7 @@ matches is allowed.
 
     python scripts/check_data.py --baseline     verify a data copy
     python run.py [--method NAME]               build a submission into evaluation/results/
+    python scripts/open_test.py                 8 open-data matches with our faults added: compare methods here
     python scripts/damage_test.py               public 5 min with realistic ball blackouts
     python scripts/sanity_report.py             does a full-match submission look like football
     python scripts/gap_clips.py                 local clips of the longest ball blackouts

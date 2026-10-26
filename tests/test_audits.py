@@ -20,6 +20,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import align_broadcast  # noqa: E402
+from possession import damage as damage_kit  # noqa: E402
 import audit_tagging  # noqa: E402
 import audit_tracking  # noqa: E402
 
@@ -121,6 +122,35 @@ class Alignment(unittest.TestCase):
         wrong = np.nanmedian(align_broadcast.player_fit(*players, rows, self.offset + 250))
         self.assertLess(right, 1.0)
         self.assertGreater(wrong, 3 * right)
+
+
+class Damage(unittest.TestCase):
+    """The fault kit hits our match's rates and never touches the answers."""
+
+    def setUp(self):
+        rng = np.random.default_rng(1)
+        n = 20000
+        labels = np.array(list("HHHHHHHHAAAAAAAAADDDDDDDDDDDDDDDDDDDD") * (n // 37 + 1))[:n]
+        labels[:100] = "X"
+        players = rng.uniform(0.1, 0.9, size=(n, 22, 2))
+        self.t = {"ball": rng.uniform(0.2, 0.8, size=(n, 2)), "players": players,
+                  "speed": np.ones((n, 22), dtype=np.float32),
+                  "team": np.array([0] * 11 + [1] * 11, dtype=np.int8), "labels": labels,
+                  "halves": [(1, 100, n - 1)], "pitch": (105.0, 68.0)}
+        self.profile = {"missing_share": 0.4, "gap_lengths": np.array([150, 300, 600]),
+                        "few_players_share": 0.1, "extra_share": {0: 0.08, 1: 0.05}}
+
+    def test_rates_and_labels(self):
+        for scenario in damage_kit.SCENARIOS:
+            out = damage_kit.damage(self.t, scenario, np.random.default_rng(0), self.profile)
+            graded = slice(100, None)
+            missing = np.isnan(out["ball"][graded, 0]).mean()
+            self.assertGreaterEqual(missing, 0.4, scenario)
+            self.assertLess(missing, 0.6, scenario)
+            self.assertIs(out["labels"], self.t["labels"])
+            self.assertEqual(out["players"].shape[1], 25)
+            self.assertEqual(len(out["team"]), 25)
+            self.assertTrue(np.isnan(out["speed"][:damage_kit.SPEED_LAG]).all())
 
 
 if __name__ == '__main__':
