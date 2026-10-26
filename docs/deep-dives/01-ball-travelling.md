@@ -97,3 +97,16 @@ The gain survives tracking noise (+0.056) and is stable across neighbouring sett
 1.5 m is worse than 1.0 m everywhere. The best dv sits at the edge of the grid, so the next sweep
 tries 7/9/12, together with the duel rule for pattern 3 (`keep_through_duels`: a change counts only
 if the holder's nearest player is at least `keep` m from the ball; keep 0/1.5/2/3).
+
+Second sweep (pass-by 6, reach 1.0):
+
+| dv | keep 0 (off) | keep 1.5 | keep 2.0 |
+|---|---|---|---|
+| 7 | **0.409** | 0.394 | 0.373 |
+| 9 | 0.407 | 0.390 | 0.372 |
+| 12 | 0.397 | 0.381 | 0.362 |
+
+dv 7 stays best. **The duel rule hurts at every setting**: requiring the holder to be clearly away
+also blocks real tackles, where the holder is still beside the ball when he loses it. One pressing
+case did not represent the pattern. It stays off; pressing errors go back to the case review.
+Candidate v4 = v3 + touch rule (dv 7, pass-by 6, reach 1.0).

@@ -37,9 +37,11 @@ from possession.tracking import PITCH
 REACH = 1.0            # m
 DUEL = 1.0             # m
 CONTROL_FRAMES = 3     # 0.12 s
-TOUCH_DV = 3.0         # m/s change in ball velocity that marks a touch
+# Touch rule (deep dive 1), set on the damaged practice matches: dv 3-12, pass-by 4-8, reach
+# 1.0/1.5 swept; dv 7, pass-by 6, reach 1.0 best (practice 0.409 vs 0.353 for the 3-frame hold).
+TOUCH_DV = 7.0         # m/s change in ball velocity that marks a touch
 TOUCH_SPAN = 3         # frames either side over which the change is measured
-PASS_BY = 8.0          # m/s: a ball faster than this past a player is not held by him
+PASS_BY = 6.0          # m/s: a ball faster than this past a player is not held by him
 HOME, AWAY, NOBODY = 0, 1, -1
 
 

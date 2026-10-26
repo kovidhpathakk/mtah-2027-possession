@@ -72,7 +72,9 @@ long jobs in the background whenever the machine is free.
 | M5 | Precise tracking: ball blips, Savitzky-Golay smoothing, broadcast ball fill | Vidal-Codina, audit | done | neutral; `v2_precise` kept as an option |
 | M6 | Better ball-gap rules: sweep thresholds; new clue "how far the ball moved while missing" | Kovidh's idea | done | gaps classified 83% right (was 74%) but score unchanged; `v2_return` kept as an option. **Oracle test: the team call in live play costs ~4× more than stoppages** |
 | M7 | Possession logic: control (within 1 m for 3 frames), duels don't flip, a pass stays with the passer's team | Link & Hoernig 2017, Vidal-Codina 2022 | done | **v3**: practice 0.311 → 0.377, better in 48/48 runs |
-| M7b | Possession logic, part 2: control by touch (ball velocity change near a player) or slow hold; no credit for a ball passing by | Link & Hoernig 2017, Vidal-Codina 2022 | **now (deep dive 1)** | clean-data first look: 0.556 → 0.646 on 2 matches |
+| M7b | Possession logic, part 2: control by touch (ball velocity change near a player) or slow hold; no credit for a ball passing by | Link & Hoernig 2017, Vidal-Codina 2022 | **now (deep dive 1)** | damaged practice 0.353 → 0.409 (dv 7, pass-by 6); candidate v4 |
+| M7c | Duel rule: keep the ball with its holder until he is clearly away (`keep_through_duels`) | deep dive 1 real cases | dropped | worse at every setting (0.394 at 1.5 m, 0.373 at 2 m): it also blocks real tackles |
+| M7d | Pressing errors: understand from a larger case review, then retry | deep dive 1 | planned | |
 | M8 | Precise Smart Tagging: exact restart frame inside each 35 s window, taker's team, trust per tag type | Smart Tagging audit | next 2 | |
 | M9 | Imitation clues on the practice matches (fake Smart Tagging and commentary from their event lists, with our sources' measured flaws) | our design | next 3 | so commentary and tagging can be tested fairly |
 | M10 | Who restarts: the taker's team gets the ball from the restart frame | Vidal-Codina | next 4 | |
