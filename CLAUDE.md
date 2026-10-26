@@ -58,6 +58,7 @@ matches is allowed.
     python scripts/audit_tagging.py             Smart Tagging checked against the tracking
     python scripts/extract_audio.py             soundtracks to data/derived/ (16 kHz WAV)
     python scripts/align_broadcast.py           broadcast -> tactical frame offsets, replays
+    python scripts/audit_confirm.py             weak audit findings tested against the broadcast tracker
     python scripts/fetch_open_data.py           DFL + Metrica open data into data/external/, hash-checked
     python -m unittest discover tests           the measuring code, checked on made-up data
     python evaluation/validate_submission.py F  check a submission

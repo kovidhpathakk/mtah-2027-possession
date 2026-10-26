@@ -215,13 +215,29 @@ Scripts: `scripts/audit_tracking.py [--source broadcast]`, `scripts/audit_taggin
 | Ball speed column is unusable | corr 0.06 with the ball's real movement | Use speed from positions: p50 5.1, p90 14.3, p99 24.4 m/s (plausible football) |
 | Player speed column is right but late | median ratio 0.99 to speed from positions; best match 7 frames (0.28 s) late | Fine for "is the team slow?", too late for timing a kick |
 | Filled-in player paths | 6.0% of moving player-seconds are perfectly straight (broadcast 1.9%) | Positions in occlusions are invented; nearest-player there is a guess |
-| **Keeper mix-up is larger than first measured** | deepest object in Barça's box labelled Athletic with the ball > 40 m away: 515 frames (1st half), **2,866** (2nd half); Athletic's box: 61 / 214 | A Barça-goal problem, mostly in the 2nd half; Athletic's numbers look like real attackers |
-| Non-players labelled as players | 33 tracks of 10 s or more living on a touchline (~8 object-minutes); 4 off the pitch | Assistant referees, substitutes: can win nearest-player votes near the touchline |
+| **A ghost in Barça's box** (corrected after the confirmation checks below: *not* a mislabelled keeper) | deepest object in Barça's box labelled Athletic with the ball > 40 m away: 515 frames (1st half), **2,866** (2nd half) | The Athletic keeper's track ID gets reused for a motionless object in front of Barça's goal. Fix: drop motionless objects, do not relabel |
+| Touchline tracks | 33–36 tracks of 10 s or more living on a touchline (~9 object-minutes) | Confirmed harmless: never nearest the ball (below) |
 | Extra objects | home > 11 on 8.1% of frames, away > 11 on 4.7% | Cap 11 per team |
 | Identity jumps | home 31 one-frame jumps > 3 m, away 0 | Rare; not a priority |
 | Ball oddities | 119 one-frame moves > 2 m; 2.1% of visible frames > 2 m off the pitch; 0.6% > 20 m from every object | Small; filter impossible jumps |
 | Camera coverage | object count 19–21 wherever play is | The tactical camera sees the whole pitch |
 | Ends | teams swap ends at halftime in the coordinates | Normal; work out each team's goal per half |
+
+### Confirmation checks: the broadcast tracker as a second witness
+
+`scripts/audit_confirm.py`. Half of the graded tactical frames are also seen live by the
+broadcast, so the weaker findings above can be tested against an independent tracker.
+
+| Question | Result | Verdict |
+|---|---|---|
+| Is the Athletic object in Barça's box Barça's keeper? | No. The two slots present longest are the two keepers, both labelled correctly (Barça's in Barça's box 89–96% of each half). The object has median speed **0.00 m/s**, stands at the same spot (2nd half: 4.0 m from the goal line, ±1 m) and always belongs to a track that already existed as Athletic: the Athletic keeper's slot, which spends 9–13% of each half in Barça's box | **Corrected**: a ghost reusing the Athletic keeper's ID. What it physically is needs one look at the video |
+| Do the touchline tracks hurt us? | 20 stand still (substitutes, staff), 16 other, **none** move with play like an assistant referee; **never** nearest the ball | **Confirmed harmless** |
+| Is the referee tracked as a player? | 1 track in 333 behaves like one (follows play 5–25 m from the ball, never touches it), 4 minutes | Not a problem |
+| What are the extra objects (12+ in a team)? | duplicates 14–22%, someone on a touchline 25–40%, **unexplained ~50%** | **Open** |
+| Does the tactical tracker fill in short ball gaps? | Where the broadcast loses the ball for 1–5 s in live play, tactical always has one, but its path is no smoother than elsewhere (12 cm off a parabola vs 10 cm). Only 87 frames to test | **Open**; leans against "fills with a smooth curve" |
+| Do the two trackers agree on team labels? | 98.2% of matched people; 94.9% inside a penalty box | Labels are reliable; boxes are the weak spot |
+| Is "clear control", the yardstick used on Smart Tagging, trustworthy? | When both trackers see clear control they agree on the team **97.2%** | **Confirmed**; Smart Tagging percentages are good to a few points |
+| Do they agree on where the ball is? | median 0.76 m apart, but **> 5 m apart on 10.5%** of frames where both have a ball (> 15 m on 2.2%) | **New finding**: one of them has a wrong ball on ~1 frame in 10. Which one is open |
 
 ### Smart Tagging, checked against the tracking (not against any answers)
 
@@ -265,7 +281,7 @@ Updated after the audit (§7). Every audit finding maps to a row here.
 |---|---|---|---|---|
 | 1 | **Restart detector from player positions** (kickoff, goal kick, corner, throw-in, penalty) | Vidal-Codina | low | Smart Tagging tags only 42 of 132 long gaps; this must find the rest, and decide which team restarts (throw-in tags have no team) |
 | 2 | **Gap rule rethink**: every surviving tactical gap is ≥ 5 s, so default to dead and let the restart detector and player speed overrule | audit | low | v1 calls medium gaps live unless players are slow; the audit says most gaps are stoppages |
-| 3 | **Clean-up**: keeper relabel in each team's own box; drop long touchline tracks; cap 11 per team; drop one-frame ball jumps > 2 m | audit | low | ~3,400 keeper frames, 33 touchline tracks, 8% frames with 12+ home objects |
+| 3 | **Clean-up**: drop motionless ghost objects (the one in Barça's box); cap 11 per team; drop one-frame ball jumps > 2 m; where the two trackers' balls disagree by > 5 m, trust neither | audit, confirmation | low | ~3,400 ghost frames, 8% frames with 12+ home objects, 10% ball disagreement |
 | 4 | **Possession logic**: possession zone, duel = keep last team, kick = acceleration peak, speed from positions (not the columns) | Vidal-Codina, Link & Hoernig, audit | low–medium | Ball speed column is unusable; player speed column is 0.28 s late |
 | 5 | **Smart Tagging as weighted clues**: team tags strong in open play (~88%), weak near the box (~60%); set pieces as "a restart around here" | audit | low | Uses each tag only as far as it was shown to be right |
 | 6 | **Broadcast as a second opinion**: its ball where tactical has none; replays as a stoppage clue | alignment | medium | 48% of broadcast frames map to tactical frames |
@@ -285,7 +301,9 @@ Updated after the audit (§7). Every audit finding maps to a row here.
   speed column (ratio 0.99, corr 0.93), which also confirms the metre conversion used for the
   ball. The broadcast offset is found separately from the ball and from the players, and they
   agree to a frame.
-- **Not verified, only inferred**: *why* there are no 1–5 s ball gaps (the tracker filling them
-  in is the likeliest explanation), whether the objects in Barça's box are the keeper (a teammate
-  saw it on the overlay once), and what the touchline tracks are. Next check: run the same audits
-  on DFL and Metrica as a control, where the data is clean and the answers are known.
+- **Second witness** (`audit_confirm.py`): the broadcast tracker settled the keeper question
+  (a ghost, not the keeper), the touchline tracks (harmless) and the referee (not tracked).
+- **Still open**: why there are no 1–5 s ball gaps; what the unexplained extra objects are;
+  which tracker is wrong when the two balls disagree. Next: run the audits on DFL and Metrica as a
+  control, and, once issue #14 is answered, look at a handful of these moments on video to
+  understand them (never to label them).

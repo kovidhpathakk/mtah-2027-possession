@@ -26,8 +26,10 @@ docs/research.md. Updated 2026-10-25.
 2. Dead ball is likely ~40–45% of the full match, not the ~20% of the calm public 5 minutes.
 3. Ball speed column unusable; speed from positions is plausible (p50 5.1, p99 24.4 m/s).
    Player speed column is right but 0.28 s late.
-4. Keeper mix-up: ~3,400 frames where the deepest object in Barça's box is labelled Athletic,
-   mostly in the 2nd half. Touchline tracks (assistants, subs) are labelled as players.
+4. **Not a keeper mix-up after all**: the ~3,400 frames with an Athletic object deepest in Barça's
+   box are a motionless ghost that reuses the Athletic keeper's track ID; both keepers are
+   labelled correctly. Touchline tracks (subs, staff) are never nearest the ball: harmless.
+   The two trackers' balls disagree by > 5 m on ~10% of frames: open.
 5. Smart Tagging: team tags 87–89% right in build-up/progression, ~60% near the box; set-piece
    tags are fixed 35 s windows and miss most restarts (only 42 of 132 long gaps tagged).
 6. Broadcast aligned: tactical = broadcast + ~4,014 (1st half) / +26,920 (2nd half), confirmed
@@ -49,8 +51,8 @@ docs/research.md. Updated 2026-10-25.
 
 | Step | What | Done when |
 |---|---|---|
-| A | Data audit (tracking, Smart Tagging, broadcast alignment) | ✅ 2026-10-25 |
-| B | Open data: download DFL + Metrica, convert to H/A/D, add our tracker's faults | a ~10-match damage test runs |
+| A | Data audit (tracking, Smart Tagging, broadcast alignment, confirmation by second tracker) | ✅ 2026-10-25 |
+| B | Open data: download DFL + Metrica (✅ downloaded, hash-checked), convert to H/A/D, add our tracker's faults | a ~10-match damage test runs |
 | C | v2: clean-up (keeper, touchline tracks, cap 11) + restart detector + possession logic | beats v1 on the new test |
 | D | Decoder (HMM/Viterbi) over v2's clues | beats v2 |
 | E | Audio: whistle detector, then commentary (Whisper + small local LLM) | each clue helps, or is dropped |

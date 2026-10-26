@@ -11,6 +11,18 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-25 · Confirmation with the broadcast tracker as a second witness
+
+- **Corrected:** the "keeper mix-up" is a motionless ghost reusing the Athletic keeper's track
+  ID, not Barça's keeper labelled Athletic. Both keepers are labelled correctly. Fix: drop
+  motionless objects, do not relabel the deepest object.
+- Touchline tracks never end up nearest the ball; the referee is not tracked as a player.
+- The two trackers agree on team labels 98% (95% in boxes) and on clear control 97%: the
+  yardstick behind the Smart Tagging numbers holds.
+- New: their balls are > 5 m apart on 10.5% of frames where both have one.
+- Still open: why no 1–5 s ball gaps; half of the "12+ objects" frames.
+
+
 ### 2026-10-25 · Data audit: tracking, Smart Tagging, broadcast alignment
 
 Full numbers in docs/research.md §7. The ones that change what we build:
