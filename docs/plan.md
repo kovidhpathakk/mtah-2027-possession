@@ -60,6 +60,11 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | T9 | **WASB ball tracker** (Tarashima et al., BMVC 2023, [arXiv 2311.05237](https://arxiv.org/abs/2311.05237); code MIT, github.com/nttcom/WASB-SBDT): built for small fast balls, uses 3 consecutive frames (copes with blur), soccer weights trained on the ISSIA-CNR soccer dataset (**fixed wide cameras**, like our tactical view; not our match); reported soccer F1 ~0.88. Its model zoo also has TrackNetV2 / MonoTrack soccer weights | T9 | ⏳ pilot running (approved; weights are tensors only, scanned; code read before use) |
 | T10 | Player detection + multi-object tracker (ByteTrack / BoT-SORT) + teams from shirt colours (Roboflow "sports" pipeline): fill missing players, check team labels | T10 | planned (player model already downloaded) |
 | T11 | SAM 2 video tracking seeded with the provided ball positions, to bridge short gaps | T11 | planned, low priority (heavy on CPU) |
+| T12 | **Ball fusion**: combine the provided tactical ball, the broadcast tracker's ball and video detections in one filter with a ball-flight model (Kalman-type): keeps the most consistent path, rejects false detections, fills gaps where a confident detection exists | T12 | planned (after T9) — improves what we have even if no detector is good enough alone |
+| T13 | Other soccer models in WASB's model zoo (TrackNetV2, MonoTrack, DeepBall, BallSeg) as a second opinion / ensemble | T13 | planned (after T9) |
+| T14 | Fine-tune a ball tracker on public wide-angle football datasets (e.g. ISSIA-CNR, SoccerTrack/TeamTrack) on a cloud GPU with public data only | T14 | planned if T9 falls short |
+| T15 | Self-training: fine-tune on our own video with labels produced by the tracker itself (pseudo-labels, no person involved). RULES.md now allows "pseudo-labels produced by an algorithm", but issue #2 forbade the provided tracking as labels | T15 | **ask the organisers first** |
+| T16 | Ball height: tracking is flat, so a lofted ball is placed wrongly; the tactical and broadcast views together could estimate height | T16 | planned, low priority (complex) |
 
 ### Deep dive 1: the team call while the ball travels (passes, loose balls): in progress
 
