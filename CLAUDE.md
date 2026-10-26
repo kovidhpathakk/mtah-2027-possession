@@ -8,7 +8,12 @@ EVALUATION.md, SUBMISSION.md and RULES.md; `evaluation/possession_metrics.py` de
 ## The data never reaches you
 
 The competition terms forbid giving the match data, or any extract of it, to a hosted LLM. That
-includes you.
+includes you. The organisers' wording (FAQ.md and OVERVIEW.md on upstream main, checked
+2026-10-26): participants "shall not upload, disclose or otherwise make available to any
+third-party hosted or cloud-based LLM any videos, datasets, confidential information or other
+restricted materials provided in connection with the Competition, or any extracts thereof". It is
+not limited to the submission. People on the team may watch the video to understand the data
+(RULES.md, upstream); Claude may not see it.
 
 - Never read, print, `head`, `cat` or open files under `data/`, or show rows, frames or cells
   from them. This covers tracking (`*_atd.txt`, `*_atd.xml`), homography, Smart Tagging, video,

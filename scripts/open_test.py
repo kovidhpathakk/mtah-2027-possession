@@ -10,8 +10,11 @@ Caveats: DFL's "possession" and our ground truth's are close but not identical (
 tracking provider's fields, CHALLENGE.md), and Metrica's labels are derived from events. Treat
 gaps between methods here as real only when they hold across matches and scenarios.
 
-    python scripts/open_test.py                         # every method, every match
-    python scripts/open_test.py --methods blackout_v1 --seeds 3
+    python scripts/open_test.py                         # every method: one practice score each
+    python scripts/open_test.py --methods blackout_v1 v2 --detail   # the full breakdown
+
+The default output is one PRACTICE SCORE per method: its spellF1 averaged over the 8 matches and
+the three damage scenarios. That is the number to compare. --detail adds the per-scenario table.
 
 CALIBRATION. The published baselines' real full-match scores (EVALUATION.md) are printed beside
 them: a scenario whose numbers and ranking sit near the real ones is the more realistic one.
@@ -50,6 +53,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--methods", nargs="+", default=sorted(METHODS), choices=sorted(METHODS))
     parser.add_argument("--seeds", type=int, default=2, help="damaged copies per match and scenario")
+    parser.add_argument("--detail", action="store_true", help="also print the per-scenario table")
     args = parser.parse_args()
 
     profile = our_profile()
@@ -79,9 +83,24 @@ if __name__ == '__main__':
             results[m]["clean"].append(score(METHODS[m], t, gt_codes)[0])
         print("  scored {}".format(name))
 
-    header = "{:<20}".format("spellF1 (mean, min-max)") + "".join(
+    practice = {m: np.mean([np.mean(results[m][c]) for c in SCENARIOS]) for m in args.methods}
+    print("\n{:<20} {:>15} {:>22} {:>16}".format(
+        "method", "practice score", "dead ball (truth {:.0%})".format(np.mean(truth_dead)),
+        "real match score"))
+    print("-" * 76)
+    for m in sorted(args.methods, key=lambda m: -practice[m]):
+        real = FULL_MATCH.get(m)
+        print("{:<20} {:>15.3f} {:>22.0%} {:>16}".format(
+            m, practice[m], np.mean(dead[m]), "{:.3f}".format(real) if real is not None else "-"))
+    print("\npractice score: spellF1 averaged over {} matches and 3 ways of damaging them; higher "
+          "is better.\nreal match score: the organisers' published full-match score, known only "
+          "for their baselines.".format(len(matches)))
+    if not args.detail:
+        sys.exit(0)
+
+    header = "\n{:<20}".format("spellF1 (mean, min-max)") + "".join(
         "{:>19}".format(c) for c in columns) + "{:>12}{:>12}".format("D share", "real match")
-    print("\n" + header + "\n" + "-" * len(header))
+    print(header + "\n" + "-" * len(header))
     for m in args.methods:
         cells = ["{:.3f} ({:.2f}-{:.2f})".format(np.mean(v), np.min(v), np.max(v))
                  for v in (results[m][c] for c in columns)]
