@@ -21,8 +21,9 @@ docs/research.md. Updated 2026-10-25.
 
 ## Key facts learned
 
-1. **Ball gaps are mostly stoppages.** The tactical tracker fills in gaps under ~5 s itself;
-   all 132 surviving gaps are ≥ 5 s, about a match's worth of restarts (research.md §7).
+1. **Ball gaps are mostly stoppages.** The tactical data has no ball gaps of 1–5 s (the
+   broadcast has 119); all 132 gaps of 5 s or more are about a match's worth of restarts
+   (research.md §7). Why the short gaps are missing is still open.
 2. Dead ball is likely ~40–45% of the full match, not the ~20% of the calm public 5 minutes.
 3. Ball speed column unusable; speed from positions is plausible (p50 5.1, p99 24.4 m/s).
    Player speed column is right but 0.28 s late.
@@ -53,7 +54,7 @@ docs/research.md. Updated 2026-10-25.
 |---|---|---|
 | A | Data audit (tracking, Smart Tagging, broadcast alignment, confirmation by second tracker) | ✅ 2026-10-25 |
 | B | Open data: download DFL + Metrica (✅ downloaded, hash-checked), convert to H/A/D, add our tracker's faults | a ~10-match damage test runs |
-| C | v2: clean-up (keeper, touchline tracks, cap 11) + restart detector + possession logic | beats v1 on the new test |
+| C | v2: clean-up (motionless ghosts, cap 11, ball jumps) + restart detector + possession logic | beats v1 on the new test |
 | D | Decoder (HMM/Viterbi) over v2's clues | beats v2 |
 | E | Audio: whistle detector, then commentary (Whisper + small local LLM) | each clue helps, or is dropped |
 | F | Pilots: vision model "is play stopped?", Ball Radar | if time allows |
