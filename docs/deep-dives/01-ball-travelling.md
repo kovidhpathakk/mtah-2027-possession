@@ -47,6 +47,27 @@ median 9.6 m/s at the false change). Two thirds of the invented possessions last
 - Link & Hoernig 2017: a **touch** is a sudden change in the ball's motion (an acceleration peak);
   possession ends when the player cannot reach the ball's predicted position.
 
+## Step 2b: looking at real cases (`scripts/case_viewer.py`)
+
+The practice matches have no video, so their tracking is the only view of the play.
+`case_viewer.py` draws top-down snapshots (−2 s to +1 s) around a moment, zoomed on the ball
+with a 1 m circle and each team's nearest distance; it refuses our match. Four random cases from
+one clean DFL match:
+
+| Case | What happens | Earlier guess right? |
+|---|---|---|
+| missed | a duel by the touchline: both teams on the ball, the away side wins it | no (guessed: one-touch pass) |
+| missed | a quick interception: an away player meets a 9.5 m/s ball for a split second at 0.9 m | yes |
+| invented | tight pressing: the home side keeps a slow ball while an away player hovers ~1 m away; v3 flips whenever he is a few cm closer | no (guessed: fast pass) |
+| invented | a long pass (13–19 m/s) flies past an away player and v3 gives it to him | yes |
+
+Three patterns, not two: (1) a fast pass flying past an opponent, (2) a quick one-touch
+interception, (3) duels and tight pressing. The touch rule targets (1) and (2). (3) needs the
+team in possession to keep the ball until the challenger is clearly on it **and** the holder
+clearly away (e.g. over 2 m): "a duel does not change possession" applied firmly.
+
+**Lesson for every dive: averages got two of four cases wrong; look at real cases before fixing.**
+
 ## Step 3: fix under test
 
 `control_events_touch` in `possession/control.py`: control is gained by a **touch** (the ball's
