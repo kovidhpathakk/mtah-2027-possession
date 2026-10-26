@@ -6,10 +6,12 @@ a method may skip work elsewhere -- the damage test passes the public window and
 hundreds of times. A method must be deterministic: same arrays in, same labels out.
 """
 
-from possession import baseline, blackout
+from possession import baseline, blackout, cleanup
 
 METHODS = {
     "blackout_v1": lambda tracking, frames=None: blackout.predict(tracking, frames),
+    "blackout_v1_clean": lambda tracking, frames=None: blackout.predict(
+        cleanup.clean(tracking), frames),
     "baseline": lambda tracking, frames=None: baseline.predict(tracking, 50, frames),
     "baseline_raw": lambda tracking, frames=None: baseline.predict(tracking, 0, frames),
     "baseline_smooth25": lambda tracking, frames=None: baseline.predict(tracking, 25, frames),

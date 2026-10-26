@@ -11,6 +11,19 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-25 · The ghost explained; clean-up does not move the score
+
+- The ghost in Barça's box is the Athletic keeper's track **frozen** (position unchanged to the
+  millimetre) for 9.7 minutes across half-time, at the spot he stood in the 1st half; after the
+  teams swap ends that spot is in front of Barça's goal. Our match has only 4 frozen stretches of
+  10 s or more, all leftovers like this.
+- `possession/cleanup.py` drops frozen objects and a team's extras (duplicates, touchline);
+  12+ frames fall from 8.1%/4.7% to 4.1%/2.5%. The rest are neither duplicates nor touchline.
+- `blackout_v1_clean` vs `blackout_v1` on the open-data test: 0.345 vs 0.347 (stoppage),
+  0.274 vs 0.276 (mixed), 0.224 vs 0.225 (random): no change. These objects rarely stand next
+  to the ball. Keep the clean-up (it is correct and cheap), but the score is in dead-ball calls.
+
+
 ### 2026-10-25 · The open-data test (8 matches, our tracker's faults added)
 
 `python scripts/open_test.py`. spellF1, mean over 8 matches × 3 seeds:
