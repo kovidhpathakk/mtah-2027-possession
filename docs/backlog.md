@@ -8,6 +8,24 @@ Status: `done` · `now` · `next` (in order) · `planned` · `parked` (decided t
 
 Last updated: 2026-10-26.
 
+## Data use: every asset, how it is used, what is untried
+
+Kept so no source is quietly forgotten (Smart Tagging went unused until 2026-10-26).
+
+| Asset | Used in the model today | Used elsewhere | Untried |
+|---|---|---|---|
+| Tactical tracking | ✅ everything (v3) | audits | – |
+| Tactical homography | ❌ | video audit (pitch ↔ pixels) | mapping video detections into the model |
+| **Smart Tagging** | ❌ **not used** | audited: team tags ~88% right in open play, ~60% near the box; set pieces vague, 2 of 3 restarts missing | **team clue where control is unclear; set-piece windows → restarts** (M8, M9) |
+| Tactical video | ❌ | detector audit (420 frames); vision pilot | football-trained detectors, Qwen3-VL, ball in gaps, ball in the air, shirt colours (V2-V8) |
+| Tactical audio | ❌ | alignment test only | **whistles** (S4), crowd noise (S5) |
+| Broadcast tracking | ❌ (fill tested, neutral) | alignment, audits, second witness | its ball when tactical's is wrong; replays as a stoppage clue (S6) |
+| Broadcast homography | ❌ | – | mapping broadcast-video detections |
+| Broadcast video | ❌ (deleted to save disk) | audio extracted | **close-up views for vision models**: players and ball are far bigger than in the wide tactical view; replays follow key events. Needs a re-download (14 GB) |
+| Broadcast audio / commentary | ❌ | transcript; keyword events; LLM labels (weak) | **event-focused LLM pass with a larger model** (S3e) |
+| Public 5-minute answers | sanity check only (never tuned on) | – | – |
+| Open data (DFL, Metrica) | practice test; settings for v2/v3 | control audit | **training a learned model** (M15); imitation clues (M9) |
+
 ## Order of work (reordered 2026-10-26)
 
 The logic: **make the test honest first** (everything is measured on it), **research before
@@ -60,7 +78,8 @@ long jobs in the background whenever the machine is free.
 | S3 | Commentary read by a local LLM: possession, live/stopped, event per line | done | **at chance for possession** (55% vs ~57% "always Barça"); "stopped" weak (55% vs 40% base) |
 | S3b | Commentary player names → team, without the LLM | done | 55–58% vs 52–54% chance: commentators don't narrate who has the ball; Barça named 3× as often as Athletic |
 | S3c | Commentary as a clue for rare long stoppages (goals, injuries, VAR, subs) | planned (low weight, in the decoder) | |
-| S3d | A bigger local LLM on the commentary | parked | the name test says the information isn't in the commentary, not that the model is too small |
+| S3d | A bigger local LLM on the commentary | folded into S3e | |
+| S3e | **Event-focused commentary pass**: keywords find every candidate line (they found 21 corners; the LLM found 3), then a larger local LLM judges each candidate with context: happening now or replay/chat, which team gets the ball (for a foul, the *other* team), confidence | planned (step 8) | Kovidh 2026-10-26: the specific events the LLM did spot were often right (offsides 5/5 near a stoppage, chance 41%), but it missed most |
 | S4 | Whistle detector on the tactical audio | planned (step 8) | never started: the commentary work came first; marks stoppage starts |
 | S5 | Crowd-noise level (rises on attacks, drops in long stoppages) | planned | |
 | S6 | Broadcast replays as a stoppage clue (replays follow stoppages) | planned | replays already detected by `align_broadcast.py` |
@@ -73,6 +92,9 @@ long jobs in the background whenever the machine is free.
 | V1 | Detector audit of the tracking (420 frames) | done | ghost not a person; ball visible in ~2/3 of gap frames |
 | V2 | **Detector finds the ball inside tracking gaps** | next (background, after S3) | where the ball is during gaps: restart spot? moving? |
 | V3 | Local vision-language model: "is play stopped?" on chosen frames | now (pilot, 30 frames) | qwen2.5vl:3b via Ollama; Kovidh approved 2026-10-26 |
+| V9 | **Best vision models that fit the laptop**: Qwen3-VL 4B (8B needs ~12 GB); football-trained detectors (YOLOv11 "soccana": players/ball/referees; RF-DETR ball) | planned (after the pilot) | check licences and that none was trained on our match |
+| V10 | **Re-download the broadcast video** and run vision models on its close-ups (mapped to tactical time by the alignment) | planned, Kovidh to download | players and ball are far larger than in the wide tactical view |
+| V11 | Cloud GPU for bigger vision models | needs the organisers' OK | the FAQ forbids giving the video to third-party hosted or cloud LLMs; a self-run model on a rented GPU is unclear: ask before trying |
 | V4 | SoccerNet-style whole-video models | dropped | too heavy for the laptop; trained on TV close-ups |
 | V5 | Clips with the tracking drawn on top, for Kovidh to watch and describe in general terms | planned | when a weakness needs understanding |
 | V6 | **Video for the team call**: in live-play gaps, the detector finds the ball and the player nearest it | planned (after M7) | targets the biggest lever; Kovidh's idea |
