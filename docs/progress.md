@@ -6,7 +6,7 @@ as a yardstick.
 
 - `docs/README.md`: which file answers which question.
 
-Last updated: 2026-10-25.
+Last updated: 2026-10-26.
 
 ---
 
@@ -287,6 +287,29 @@ with swap).
 8. **Where the points are now** (realistic test): perfect stoppages would add +0.09, perfect team
    calls in live play +0.42. Three quarters of the team errors happen while the ball travels
    between players (66% of live play, v4 wrong 21% there).
+
+### Stage 9 · Can we make better tracking from the video? (Oct 26)
+
+**Why.** The touch rule had worked on a sharp ball and failed only because our tracker's ball is
+smoothed. A ball track of our own, made from the video by a ball detector, could be sharp and could
+fill the gaps. RULES.md allows improving or replacing the tracking.
+
+**How.** Ball detectors run locally on the video; Claude sees only counts. Each was checked the same
+way: on frames where the tracker has a ball, does the detector find a ball within 2 m of it? For a
+ball track of our own it would need to be right about 9 times in 10.
+
+| Detector | Video | Ball within 2 m |
+|---|---|---|
+| Roboflow football ball model (YOLOv8) | tactical, whole frame / zoomed window | 50% / 55% |
+| same | broadcast (ball several times larger) | 51%; finds a ball in 80% of the tracker's gaps, 57% confidently |
+| WASB (a research tracker built for small fast balls, trained on fixed wide football cameras) | tactical, best window and threshold | 60% |
+
+**Learned.** Off-the-shelf detectors find the ball about half the time on our wide camera: far from
+the ~90% needed, so our own ball track is parked. The broadcast-detected ball moves more sharply
+than the tracker's (9% vs 4% sharp changes), which supports the smoothing finding. What remains:
+combining all ball sources in one filter where a detector is confident (T12), and fine-tuning on
+public football video (T14) or on our video with algorithm-made labels (T15, organisers first).
+The main effort returns to interpreting the tracking we have.
 
 ## Next steps
 

@@ -51,7 +51,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | T0 | **Realism report**: our match vs damaged practice on every measure, flagging gaps | P1d | ✅ 17 of 18 measures within 1.5× after copying missing-player episodes |
 | T1 | Football-trained detector pilot | V9, T1, V17 | ✅ done: **not good enough** on the wide view (ball within 2 m on 50% of frames; 55% with a zoomed crop); smoothing check inconclusive |
 | T2 | **Confirm the smoothing from the video**: detector on runs of consecutive frames around kicks; compare the real ball's speed changes with the recorded ones | V17 | with T1 |
-| T3 | Our own ball track from the video | T3 | **parked**: needs a detector that finds the ball reliably; route left: the broadcast video (ball several times larger), if disk space allows a 14 GB re-download |
+| T3 | Our own ball track from the video | T3 | **parked**: three off-the-shelf detectors reach 50-60% within 2 m (T1 Roboflow tactical, T6 Roboflow broadcast, T9 WASB); ~90% is needed. Reopens only if T14/T15 produce a much better detector |
 | T4 | v4's touch rule and the trained models on our own ball track | T4 | after T3 |
 | T5 | Player re-detection (missing players), team labels from shirt colours | V8, V15 | later |
 | T6 | Broadcast pilot: the same ball detector on the zoomed-in broadcast video, mapped to tactical time | T6 | ✅ done: best guess right 51% (tactical 32%); a ball in 80% of tactical gaps shown live (57% confident); detected ball sharper than the provided one (9% vs 4%). Still ~50% within 2 m: not reliable enough alone |
@@ -61,7 +61,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | T10 | Player detection + multi-object tracker (ByteTrack / BoT-SORT) + teams from shirt colours (Roboflow "sports" pipeline): fill missing players, check team labels | T10 | planned (player model already downloaded) |
 | T11 | SAM 2 video tracking seeded with the provided ball positions, to bridge short gaps | T11 | planned, low priority (heavy on CPU) |
 | T12 | **Ball fusion** (best remaining track T route): combine the provided tactical ball, the broadcast tracker's ball and video detections in one filter with a ball-flight model (Kalman-type): keeps the most consistent path, rejects false detections, fills gaps where a confident detection exists | T12 | planned (after T9) — improves what we have even if no detector is good enough alone |
-| T13 | Other soccer models in WASB's model zoo (TrackNetV2, MonoTrack, DeepBall, BallSeg) as a second opinion / ensemble | T13 | planned (after T9) |
+| T13 | Other soccer models in WASB's model zoo (TrackNetV2, MonoTrack, DeepBall, BallSeg) as a second opinion / ensemble | T13 | low priority: in WASB's own paper WASB beat all of them on soccer, and WASB reaches 60% here |
 | T14 | Fine-tune a ball tracker on public wide-angle football datasets (e.g. ISSIA-CNR, SoccerTrack/TeamTrack) on a cloud GPU with public data only | T14 | planned if T9 falls short |
 | T15 | Self-training: fine-tune on our own video with labels produced by the tracker itself (pseudo-labels, no person involved). RULES.md now allows "pseudo-labels produced by an algorithm", but issue #2 forbade the provided tracking as labels | T15 | **ask the organisers first** |
 | T16 | Ball height: tracking is flat, so a lofted ball is placed wrongly; the tactical and broadcast views together could estimate height | T16 | planned, low priority (complex) |
