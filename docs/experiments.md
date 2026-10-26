@@ -13,6 +13,16 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Vision pilot 2 could not run: the laptop's 8 GB is the limit
+
+Qwen3-VL 4B (3.3 GB on disk, 4.1 GB loaded) fitted only 71% on the GPU with the usual apps open;
+the machine swapped (3.9 GB swap, 56 MB free) and one cropped image got no answer within 10
+minutes. Thinking was also left on. Options: Qwen3-VL 2B (~1.9 GB), the 4B with every other app
+closed, smaller images and context, football-trained detectors (far lighter than a vision-language
+model), or a rented GPU (needs the organisers' OK). The pilot script now turns thinking off,
+uses a small context and counts timeouts instead of crashing.
+
+
 ### 2026-10-26 · Vision pilot: a small model cannot read the wide tactical view
 
 `scripts/vision_pilot.py`, qwen2.5vl:3b via Ollama, 30 frames (10 per group), 26 s per frame:
