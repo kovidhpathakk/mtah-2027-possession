@@ -205,3 +205,36 @@ Stoppage frames: v4 misses 25.5% of true dead frames and calls 23.5% of true liv
 The team call while the ball travels is three quarters of the team errors, and the team call is
 worth four times the stoppages. This dive stays the priority; it now turns to trained models and
 longer-window cues.
+
+## Step 10: a team call learned from the practice matches → v5
+
+Rules read one clue at a time, and the clue v4 relied on (a sharp change in the ball's motion) is
+blurred in our tracking. So the next attempt was the one the papers point to (Borghesi 2023: learn
+possession from tracking; Link & Hoernig: control from distances, duration and ball dynamics):
+**let a model weigh many clues, trained on the practice matches' true possession.**
+
+- **Clues** (59 per frame, `possession/learned.py`): nearest players now; each team's closest
+  approach over the last and next 0.24-2 s; v3/v4's control events (last and next, same live
+  stretch) and their answers; the ball's position, speed and velocity change; each team's position,
+  spread, speed and share of players goal-side of the ball.
+- **Training:** the 8 practice matches damaged under all three ball-gap scenarios (seed 100),
+  every 5th live frame, both teams' views (~620,000 rows); gradient-boosted trees. Each practice
+  match is scored with a model trained on the other seven.
+- **Decoding:** a Viterbi pass per live stretch, paying a fixed price per change of team. Without
+  it the model's frame accuracy is wasted on flicker (0.279, no better than v4).
+
+| | v4 | v5 |
+|---|---|---|
+| practice, sweep seeds (switch cost 10) | 0.286 | 0.430 (48/48 runs better) |
+| practice, fresh seeds | 0.279 | 0.430 |
+| team right: ball travelling / at feet / missing | 78% / 91% / 71% | 89% / 94% / 84% |
+| damage test (public window, 30 runs) | 0.329 | 0.440 |
+| our match: Smart Tagging agreement (att / def) | 74% / 78% | 76% / 82% |
+
+**What it leans on:** shuffling the team-shape clues costs 17 points of accuracy; the ball clues
+5, before/after 2, control events 2, nearest players now 0.3. While the ball travels, the
+arrangement of the two teams says more about who has it than the ball's own path: the team with
+the ball pushes up and spreads, the other drops behind the ball.
+
+**Open:** v5 makes fewer possessions than the truth (M25), and the model itself can still grow
+(M26). Deep dives 2-4 can reuse the same machinery.

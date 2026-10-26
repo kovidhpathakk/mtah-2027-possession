@@ -6,7 +6,7 @@ a method may skip work elsewhere -- the damage test passes the public window and
 hundreds of times. A method must be deterministic: same arrays in, same labels out.
 """
 
-from possession import baseline, blackout, cleanup, stoppages, tagging
+from possession import baseline, blackout, cleanup, learned, stoppages, tagging
 
 
 def _tags(tracking):
@@ -21,6 +21,9 @@ def _tags(tracking):
 
 
 METHODS = {
+    "v5": lambda tracking, frames=None: learned.predict(tracking, frames, switch_cost=10.0),
+    "v5_switch5": lambda tracking, frames=None: learned.predict(tracking, frames, switch_cost=5.0),
+    "v5_switch20": lambda tracking, frames=None: learned.predict(tracking, frames, switch_cost=20.0),
     "v4": lambda tracking, frames=None: stoppages.predict(
         tracking, frames, team_by="control", control_options=dict(touch=True)),
     "v4_tags": lambda tracking, frames=None: stoppages.predict(
@@ -49,4 +52,4 @@ METHODS = {
     "baseline_smooth25": lambda tracking, frames=None: baseline.predict(tracking, 25, frames),
     "baseline_smooth125": lambda tracking, frames=None: baseline.predict(tracking, 125, frames),
 }
-DEFAULT_METHOD = "v4"  # python run.py builds the current best model
+DEFAULT_METHOD = "v5"  # python run.py builds the current best model

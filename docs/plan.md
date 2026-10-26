@@ -66,7 +66,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | T15 | Self-training: fine-tune on our own video with labels produced by the tracker itself (pseudo-labels, no person involved). RULES.md now allows "pseudo-labels produced by an algorithm", but issue #2 forbade the provided tracking as labels | T15 | **ask the organisers first** |
 | T16 | Ball height: tracking is flat, so a lofted ball is placed wrongly; the tactical and broadcast views together could estimate height | T16 | planned, low priority (complex) |
 
-### Deep dive 1: the team call while the ball travels (passes, loose balls): in progress
+### Deep dive 1: the team call while the ball travels (passes, loose balls): v5 done, follow-ups open
 
 | Track | Experiment | Rows | Status |
 |---|---|---|---|
@@ -74,10 +74,10 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | Tracking + papers | duel rule ("holder keeps the ball") | M7c | ✅ dropped (blocks real tackles) |
 | Data check | our ball is smoothed: copy into practice, re-tune the touch rule | P1c, M7e | ✅ done: **touch rule's gain was an artefact** (realistic kit: v3 0.291, v4 0.288, best re-tune 0.297) |
 | Tracking | anatomy and case review redone on the realistic kit | M7d | next |
-| Tracking | longer-window cues: ball direction change over ~1 s; the receiver slows and turns | M24 | next |
+| Tracking | longer-window cues: ball direction change over ~1 s; the receiver slows and turns | M24 | partly covered by v5's before/after clues; retry as extra v5 clues |
 | Papers | Link & Hoernig's end-of-possession rule: possession ends when no teammate can reach the ball's predicted position within 1 s | M20 | next |
-| **Trained on DFL** | **control classifier** (Link & Hoernig's features: duration, ball speed and acceleration, opponents within 0.5-5 m) trained on DFL's true possession changes | M19 | next |
-| **Trained on DFL** | **learned possession model** (Borghesi 2023: a sequence model over tracking features) giving P(home / away) per frame | M15 | next |
+| **Trained on DFL** | **control classifier** (Link & Hoernig's features) trained on DFL's true possession changes | M19 | folded into M15: v3/v4's control events are clues of the learned team call |
+| **Trained on practice** | **learned team call** (Borghesi 2023 idea: a model over tracking clues) giving P(home) per frame, Viterbi decoding | M15 | ✅ done → **v5**: practice 0.279 → 0.430 (fresh seeds, 48/48 runs); team right 89.5% vs 81.0%; team shape is the strongest clue |
 | Smart Tagging | team tags overriding v4 when stale | M8b | ✅ no gain |
 | Smart Tagging | team tags as **weighted evidence** in the decoder, and a phase-level check (v4 contradicting a whole high-trust phase) | M8c, M8d | planned (decoder) |
 | Video (tactical) | detector + shirt colours to check team labels in the boxes | V8 | planned |
@@ -94,7 +94,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | Video (tactical) | detector finds the ball at the restart moment: which spot (touchline, corner flag, goal area, centre) | V14 |
 | Trained on DFL | restart team from the configuration of both teams at the restart | M23 |
 
-### Deep dive 3: ball missing in live play (5.3 min of our match; v4 wrong ~28% there)
+### Deep dive 3: ball missing in live play (5.3 min of our match; v4 wrong ~28% there, v5 ~16% on practice)
 
 | Track | Experiment | Rows |
 |---|---|---|
@@ -153,14 +153,16 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | M12 | **Decoder** (HMM/Viterbi): the most believable H/A/D sequence, weighing every clue with trust learned on practice | our design | next 6 | |
 | M13 | Stop the vote at stoppages | v2 testing | dropped | slightly worse in every scenario |
 | M14 | Visible-ball stoppages where the ball is carried, not still | v2 weaknesses | planned | e.g. walking to a throw-in |
-| M15 | **Learned possession model**: a sequence model trained on the DFL matches' per-frame possession, as in Borghesi et al. 2023 (Temporal Convolutional Networks on tracking data, *Expert Systems with Applications*) | research 2026-10-26 | planned | DFL gives ~1.4 million labelled frames; leave-one-match-out testing |
+| M15 | **Learned team call**: gradient-boosted trees over 59 tracking clues trained on the damaged practice matches' per-frame possession (idea from Borghesi et al. 2023), both teams' views, Viterbi decoding | research 2026-10-26 | **done → v5** | practice 0.430 vs v4 0.279 (fresh seeds); `scripts/learned_test.py`; model.md step 4 |
 | M16 | **Ball-free possession and events** with a CRF/Viterbi over player-to-player paths, as in PathCRF (arXiv 2602.12080, KDD'26) | research 2026-10-26 | planned | targets live play with the ball missing, and fits the decoder (M12) |
-| M18 | **Learned stoppage classifier** trained on DFL (gap length, where the ball vanished and returned, team speed, still ball, restart shapes) vs v2's hand rules | deep dive 4 | planned | |
-| M19 | **Learned control classifier** trained on DFL's true possession changes, with Link & Hoernig's features (duration, ball speed and acceleration, opponents within 0.5-5 m) | Link & Hoernig 2017 | next (dive 1) | |
+| M18 | **Learned stoppage classifier** trained on the practice matches (gap length, where the ball vanished and returned, team speed, still ball, restart shapes, team shape) vs v2's hand rules | deep dive 4 | planned | reuse v5's machinery (`possession/learned.py`) with D as a third answer |
+| M19 | **Learned control classifier** trained on DFL's true possession changes, with Link & Hoernig's features (duration, ball speed and acceleration, opponents within 0.5-5 m) | Link & Hoernig 2017 | folded into M15 | the control events and distance windows are v5 clues |
 | M20 | End-of-possession rule: possession ends when no teammate can reach the ball's predicted position within 1 s | Link & Hoernig 2017 | next (dive 1) | |
-| M21 | Team-shape clue for who has the ball while it is missing (advancing open shape vs retreating compact shape), learned on DFL | tactics literature | planned (dive 3) | |
+| M21 | Team-shape clue for who has the ball (advancing open shape vs retreating compact shape; share goal-side of the ball), learned on DFL | tactics literature | done inside M15 | the strongest v5 clue: shuffling it costs 17 points of accuracy |
 | M22 | Decoder statistics learned from DFL: possession and stoppage length distributions, switch rates | our design | planned (decoder) | |
 | M23 | **Restart detector from player positions** (throw-in taker beyond the touchline, corner taker at the flag, keeper in the goal area, kickoff formation); taker's team gets the ball | Vidal-Codina 2022 | next (dive 2) | |
+| M25 | **v5 possession count**: v5 makes fewer possessions than the truth (practice 3.4 vs 4.5 a minute; our match 2.8 vs ~3.4 in the public window). Find which true possessions it merges (length, situation) and try a duration-aware decoder or a learned change-point model | v5 results 2026-10-26 | next | |
+| M26 | **v5 model upgrades**: more damaged copies per match, hyperparameters, per-player clues (the receiver's speed and turn), a sequence model (TCN, Borghesi 2023) over the clues | v5 results 2026-10-26 | planned | practice matches only; leave-one-match-out |
 | M8c | Smart Tagging team tags as weighted evidence in the decoder (not a hard override) | deep dive 1 | planned | |
 | M8d | Phase-level check: v4 contradicting an entire high-trust Smart Tagging phase | deep dive 1 | planned | |
 | M17 | Wider research pass: MLSA/ECML sports-analytics workshops, SoccerNet game-state, 2024-26 possession and event-detection papers | Kovidh, 2026-10-26 | planned | |

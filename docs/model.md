@@ -1,10 +1,11 @@
-# How our model works (v4)
+# How our model works (v5)
 
 Plain-language description of the current best model, every rule and setting with where it came
 from. Kept in step with the code (`possession/`); the technical document will be built from it.
-Last updated: 2026-10-26.
+Last updated: 2026-10-26 (v5).
 
-    python run.py            # builds evaluation/results/ours_v4.csv from data/ (the submission)
+    python scripts/fetch_open_data.py   # once: the practice matches v5 learns from
+    python run.py                       # builds evaluation/results/ours_v5.csv (the submission)
 
 ## The job
 
@@ -43,37 +44,68 @@ centimetres; without this, one practice match got 2,000 fake one-frame possessio
 The whole idea that a missing ball and restart positions mark dead ball follows Vidal-Codina et
 al. 2022.
 
-### 4. Decide which team has the ball in live play (`possession/control.py`, from v3 and v4)
+### 4. Decide which team has the ball in live play (`possession/learned.py`, v5)
 
 **Rule of the game (CHALLENGE.md):** possession changes only when the other team gains
 *controlled* possession; contested and loose balls stay with the last team.
 
-**How we detect "gains control"**, at every frame with the ball in view:
+v3 and v4 decided this with hand-made rules (4a). v5 keeps those rules as **clues** and lets a
+model, trained on the 8 practice matches, weigh them together with about 50 other clues (4b), then
+turns its frame-by-frame answers into whole possessions (4c).
+
+#### 4a. The control rules (`possession/control.py`, v3 and v4), now clues
 
 1. Find each team's nearest player to the ball.
 2. A team is a **candidate** if its nearest player is within **1 m** of the ball and the other
    team's nearest player is **not** within 1 m (otherwise it is a duel, and nothing changes).
 3. The candidate team **gains control** at that frame if either:
    - **touch**: the ball's velocity changes by at least **7 m/s** between 0.12 s before and 0.12 s
-     after (the ball was stopped, redirected or kicked by that player), however brief; or
+     after, however brief; or
    - **hold**: the candidate keeps the ball within reach for **3 frames** or more while the ball
-     moves slower than **6 m/s** (the ball travels with the player).
-   A ball that merely **flies past** a player at unchanged speed never counts, however close.
-4. The team that last gained control **keeps the ball** through passes, loose balls, duels and
-   short ball gaps, until the other team gains control. The change lands on the exact frame: no
-   smoothing.
-5. At the start of each live stretch, before anyone has gained control, the nearest-player vote
-   over ±2 s decides (the organisers' baseline idea).
+     moves slower than **6 m/s**.
+4. The team that last gained control **keeps the ball** until the other team gains control.
 
-**Example.** Pedri passes to Yamal; the ball flies past an Athletic midfielder 0.8 m away at
-14 m/s without changing course: no change. Yamal stops it (velocity changes by ~14 m/s): Barça,
-as before. Vivian steps in and redirects it: a touch, so Athletic from that frame.
+Sources: the 1 m zone and "a duel is not possession" are Vidal-Codina et al. 2022; "a touch is a
+sudden change in the ball's motion" and "a pass stays with the passer's team" are Link & Hoernig
+2017. On their own these rules score 0.28-0.29 on practice: our tracker's ball is smoothed, so
+touches are blurred, and a third of the ball positions are missing.
 
-**Where it comes from:** the 1 m possession zone and "a duel is not possession" are Vidal-Codina
-et al. 2022; "a touch is a sudden change in the ball's motion" and "a pass stays with the passer's
-team until someone else controls it" are Link & Hoernig 2017. The numbers (1 m, 7 m/s, 6 m/s,
-3 frames) were chosen by sweeps on the practice matches, never on our match; the best distances
-matched the papers' own. Deep dive 1 (`docs/deep-dives/01-ball-travelling.md`) has the evidence.
+#### 4b. The learned team call: 59 clues per frame
+
+| Family | Clues | Why it helps |
+|---|---|---|
+| Near | each team's nearest and second-nearest player to the ball; players within 3 m | who is on the ball now |
+| Before and after | each team's closest approach to the ball over the last and the next 0.24, 0.5, 1 and 2 s; which team was nearer over ±0.5 s and ±2 s | who the ball came from and who it goes to: still visible when the ball path is smoothed |
+| Control | team and distance (frames) of the last and the next control event (both rules of 4a) in the same live stretch; v3's and v4's own answers; the nearest player's team; the ±2 s vote | the rules' knowledge, kept |
+| Ball | position along the pitch (towards the goal this team attacks), distance from the centre line, speed, forward speed, change of velocity now and over ±0.5 s, time since and until the ball is seen | a fast forward ball is usually a pass by the team attacking that way |
+| Team shape | each team's average position along the pitch, spread (length and width), speed, how it moves forward or back, and the **share of its players goal-side of the ball** | the team with the ball pushes up and spreads out; the team without it drops behind the ball. Works even when the ball is missing |
+
+**The model:** gradient-boosted decision trees (scikit-learn's HistGradientBoostingClassifier, 200
+trees, fixed seed). It learns from 8 open-data matches (7 Bundesliga matches from DFL, 1 from
+Metrica) whose answers are known on every frame. Their tracking is first **damaged** the way our
+tracker is (missing ball, smoothed ball, wrong team labels, missing players, ghost objects), so the
+model learns to read tracking that looks like ours. About 620,000 frames, both teams' views.
+
+**Fairness between teams:** every clue is computed once from Barça's point of view and once from
+Athletic's, and the answer averages the two. The model therefore cannot learn "the home team has
+the ball more".
+
+**Illustration** (made up, to show how clues combine). A long Barça pass flies towards an
+Athletic centre-back; the ball is missing for 1 s. v4 had no control event, so it kept Barça. v5
+sees that in the next second the centre-back is the closest player and Athletic's players stop
+dropping back and push up: it gives Athletic the ball from about the moment the centre-back
+reaches it.
+
+#### 4c. From frame answers to possessions
+
+The model gives a probability per frame ("Barça has it: 0.83"). Taking the likelier team each frame
+would flicker, and every flicker costs a whole possession in spellF1. So, per live stretch, a
+**Viterbi pass** (a standard way to find the best sequence) picks the team sequence that best fits
+the probabilities while paying a fixed price for every change of team (switch cost 10, in
+log-probability; 5 and 10 tie on practice, 20 is worse).
+
+**Never our match:** the model sees only the practice matches. When `open_test.py` scores a
+practice match, that match's labels come from a model trained on the other seven.
 
 ### 5. Match rules (`possession/polish.py`)
 
@@ -83,19 +115,26 @@ its kickoff (frame 113,742).
 ## What the model does *not* use yet
 
 Smart Tagging, the video, the audio (whistles), the commentary and the broadcast tracking. Each
-was audited; their use is planned inside the deep dives (`docs/plan.md`, "Data use").
+was audited; their use is planned inside the deep dives (`docs/plan.md`, "Data use"). Stoppages
+(step 3) are still hand-made rules; a learned stoppage model is deep dive 4.
 
 ## How good it is
 
-| Test | Score |
-|---|---|
-| Practice matches, realistic damage (8 other matches; ball smoothed like ours) | 0.288 (v3: 0.291; the organisers' baseline: 0.238 here, 0.243 on the real match) |
-| Public 5 minutes (17 possessions; a sanity check, noise band ~0.33) | 0.431 |
-| Our match: possessions per minute / dead-ball share | 3.45 (public truth 3.40) / 40% |
+| Test | v5 | v4 |
+|---|---|---|
+| Practice matches, realistic damage (8 other matches, fresh damage seeds; the organisers' baseline scores 0.229 here, 0.243 on the real match) | **0.430** | 0.279 |
+| Team right on live frames, practice | 89.5% | 81.0% |
+| Public 5 minutes (17 possessions; a sanity check only, noise band ~0.33) | 0.607 | 0.431 |
+| Our match: Smart Tagging agreement, attacking / defending phases | 76% / 82% | 74% / 78% |
+| Our match: possessions per minute / shorter than 1 s | 2.82 / 3% | 3.45 / 11% |
 
-**Caveat.** The touch rule (step 4) was tuned on practice balls sharper than ours. On a ball
-smoothed like ours it adds nothing over v3 on practice (0.288 vs 0.291); v4 is kept because it is
-better on our match's checks. Deep dive 1 is working on team-call rules that suit a smoothed ball.
+**Caveats.** (1) v5 makes fewer possessions than the truth: on practice 3.4 a minute against 4.5
+(v4: 3.5), and on our match 2.8 against ~3.4 in the public 5 minutes. Merging is cheaper in spellF1
+than flicker, but it is the next thing to look at. (2) The model is only as good as the practice
+damage is realistic; the realism report (`scripts/realism_report.py`) checks 18 measures. On our
+match the model is as sure of itself as on practice (mean confidence 0.90), a sign it is not out of
+its depth. (3) Needs the open data (`scripts/fetch_open_data.py`) and scikit-learn
+(`requirements-lock.txt`); retraining from nothing gives a byte-identical submission.
 
 ## Version history
 
@@ -107,4 +146,5 @@ Practice scores on the realistic kit (ball smoothed like ours).
 | v1 (`blackout_v1`) | baseline + ball gaps: 20 s+ = dead, 2-20 s dead only if players slow, else keep the team (from Kovidh's review of the 15 longest gaps) | 0.259 |
 | v2 | stoppages rebuilt from measurements (step 3) + clean-up (step 2) | 0.271 |
 | v3 | team by control: 1 m, no duel, held 3 frames (step 4, first version) | 0.291 |
-| **v4** | + touch rule and pass-by check (step 4 as above) | **0.288** (better than v3 on our match's checks) |
+| v4 | + touch rule and pass-by check (4a) | 0.288 (better than v3 on our match's checks) |
+| **v5** | v4's stoppages + **learned team call** (4b, 4c): 59 clues, trees trained on the damaged practice matches, Viterbi decoding | **0.430** (fresh seeds; v4 0.279 on the same copies) |

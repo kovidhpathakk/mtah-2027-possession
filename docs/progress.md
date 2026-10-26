@@ -14,9 +14,9 @@ Last updated: 2026-10-26.
 
 | | |
 |---|---|
-| **Best model** | **v4** (frozen candidate): practice 0.288 on the realistic kit (v3 0.291, baseline 0.238 vs its real 0.243), quiz 0.431. Realistic expectation on the real match: ~0.29 |
-| **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
-| **Working on** | Deep dive 1: team-call methods that suit our smoothed ball (trained models, longer-window cues) |
+| **Best model** | **v5** (new candidate): practice **0.430** on the realistic kit (v4 0.279 on the same damaged copies; baseline 0.229 here vs its real 0.243). Realistic expectation on the real match: around 0.4 (practice sits within ~0.015 of the real score for the baseline) |
+| **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v4.csv` and `ours_v5.csv` also valid |
+| **Working on** | After v5: where the points are now (stoppages vs team call), and why v5 makes fewer possessions than the truth |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Docs** | `docs/README.md` maps every file |
 | **Deadline** | 17 November 2026 |
@@ -63,7 +63,8 @@ smoothed like ours, from 2026-10-26). Earlier, sharper-ball numbers are in `expe
 | v1 (`blackout_v1`) | 0.259 | 0.362 | – | 32% | superseded |
 | v2 (`v2`) | 0.271 | 0.371 | – | 40% | superseded |
 | v3 (`v3`) | 0.291 | 0.357 | – | 40% | level with v4 on practice |
-| **v4** (`v4`) | **0.288** | **0.431** | – | **40%** | **frozen candidate** (better on our match's checks) |
+| v4 (`v4`) | 0.288 | 0.431 | – | 40% | superseded (fallback) |
+| **v5** (`v5`) | **0.430** | **0.607** | – | **40%** | **candidate**: learned team call (fresh seeds; v4 0.279 on the same copies) |
 
 ## The story so far
 
@@ -287,6 +288,22 @@ with swap).
 8. **Where the points are now** (realistic test): perfect stoppages would add +0.09, perfect team
    calls in live play +0.42. Three quarters of the team errors happen while the ball travels
    between players (66% of live play, v4 wrong 21% there).
+9. **v5: a team call learned from the practice matches** (`possession/learned.py`). Instead of
+   one more hand-made rule, a model weighs 59 clues per frame: who is near the ball, who it came
+   from and goes to, v3/v4's control events, the ball's movement, and the shape of both teams. It
+   learns from the 8 practice matches, damaged to look like our tracker, and never sees our
+   match; each practice match is scored by a model trained on the other seven. A decoder then
+   turns frame answers into whole possessions, paying a price for every change of team.
+   **Practice 0.279 → 0.430 on fresh damage, better in 48 of 48 runs**; team right on 89.5% of live
+   frames (v4 81.0%), including 84% while the ball is missing (v4 71%). On our match: Smart
+   Tagging agreement up (76/82% vs 74/78%), fewer flickers (possessions under 1 s: 3% vs 11%),
+   damage test 0.440 vs 0.329, quiz 0.607 (noted, never tuned on). Rebuilt from nothing, the
+   submission is byte-identical.
+   **What it learned:** shuffling the team-shape clues costs 17 points of accuracy, everything else
+   2-5. The team with the ball pushes up and spreads out; the other team drops goal-side of the
+   ball. That stays readable when the ball is smoothed or missing, our tracker's weak spots.
+   **Watch:** v5 makes fewer possessions than the truth (practice 3.4 vs 4.5 a minute; our match
+   2.8 vs ~3.4).
 
 ### Stage 9 · Can we make better tracking from the video? (Oct 26)
 

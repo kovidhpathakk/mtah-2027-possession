@@ -5,6 +5,7 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 | Date | Who | Branch | What changed | Public spellF1 / macroF1 | Damage-test spellF1 (mean ± spread) | Possessions (full match) | Mean length (s) | D share | Notes |
 |---|---|---|---|---|---|---|---|---|---|
+| 2026-10-26 | Claude | phase1-tools | **v5** = v4's stoppages + **learned team call** (`possession/learned.py`, M15): 59 clues per frame (near, before/after, control events, ball, team shape), gradient-boosted trees trained on the 8 damaged practice matches (both teams' views), Viterbi decoding with switch cost 10 | 0.6065 / 0.7074 | 0.440 (0.282–0.556), v4 0.329 (0.222–0.432), 30 runs | 299 | 12.7 | 40% | Practice (realistic kit, fresh seeds) **0.430 vs v4 0.279**; better in 48/48 paired runs (sweep seeds). Team right on live frames 89.5% vs 81.0%. Our match: Smart Tagging agreement 76/82% (v4 74/78%), possessions <1 s 3% (v4 11%), 2.82 possessions/min (v4 3.45; public truth 3.40); model as confident as on practice (0.90). Valid; byte-identical on rerun and after retraining from nothing |
 | 2026-10-26 | Claude | phase1-tools | **v4** = v3 + touch rule (deep dive 1): control gained by a touch (ball velocity changes ≥ 7 m/s by one team's player, no opponent within 1 m) or a slow hold (3+ frames within 1 m, ball under 6 m/s); a ball passing by never counts | 0.4308 / 0.6652 | – | 365 | 10.4 | 40% | Practice (harder kit) 0.410 vs v3 0.352; better in 48/48 runs on fresh seeds. Our match: 3.45 possessions/min (public truth 3.40), Smart Tagging agreement 74/78%. Quiz 0.431 (top of the public board; noise band ~0.33). Valid, byte-identical on rerun |
 | 2026-10-26 | Claude | phase1-tools | **v3** = v2 stoppages + team by **control** (`possession/control.py`, Link & Hoernig 2017, Vidal-Codina 2022): a team gains the ball when its player holds it within 1 m for 3 frames with no opponent within 1 m; held through passes, loose balls and duels; no smoothing | 0.3565 / 0.6465 | – | 467 | 8.1 | 40% | Practice 0.377 vs v2 0.311; better in 48/48 match × scenario × seed runs on fresh seeds. Our match: fewer short possessions (10% vs 14%), Smart Tagging agreement 70/74% (truth 70/75%), quiz transF1 0.31 vs 0.21; quiz spellF1 0.357 vs 0.371 is within its noise |
 | 2026-10-25 | Claude | phase1-tools | **v2** (`possession/stoppages.py`): clean-up; dead if ball > 1 m out, ball still ≥ 2 s, or a gap ≥ 1 s with slow players / at an edge / ≥ 20 s; tidy flicker; plain ±2 s vote | 0.3714 / 0.6602 | 0.277 (0.193–0.358) | 496 | 7.6 | 40% | Open-data test 0.388 / 0.298 / 0.250 vs v1 0.349 / 0.272 / 0.233; D share 42% vs truth 43%. Byte-identical on rerun |
@@ -13,6 +14,57 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 | 2026-10-23 | — | main | Baseline smooth50, unchanged | 0.3256 / 0.6207 | 0.226 (0.148–0.316) | 594 | 7.2 | 32% | Reference. Full-match spellF1 0.2433 per EVALUATION.md |
 
 ## Findings
+
+### 2026-10-26 · v5: the team call learned from the practice matches (deep dive 1, M15)
+
+`possession/learned.py`, `scripts/learned_test.py`. Stoppages stay v4's; the team in live play is
+learned. Training: the 8 practice matches, each damaged under the three ball-gap scenarios (damage
+seed 100), every 5th frame live in v4 and in the answers, both teams' views: ~620,000 rows.
+scikit-learn HistGradientBoostingClassifier (200 trees, 31 leaves, learning rate 0.1, L2 1.0, no
+early stopping, random_state 0). Leave one match out: each practice match is labelled by the model
+trained on the other seven.
+
+**Sweep** (test seeds 0-1; v4 0.286 on the same copies):
+
+| Decoding | practice | stoppage | mixed | random | beats v4 |
+|---|---|---|---|---|---|
+| per-frame likelier team (no decoding) | 0.279 | 0.343 | 0.270 | 0.224 | 21/48 |
+| Viterbi, switch cost 5 | 0.431 | 0.533 | 0.418 | 0.344 | 48/48 |
+| switch cost 10 | 0.430 | 0.531 | 0.417 | 0.341 | 48/48 |
+| switch cost 20 | 0.419 | 0.523 | 0.406 | 0.329 | 48/48 |
+| switch cost 40 | 0.386 | 0.482 | 0.372 | 0.304 | 48/48 |
+| switch cost 80 | 0.336 | 0.420 | 0.324 | 0.263 | 45/48 |
+
+Without decoding the better frame accuracy is wasted on flicker; switch cost 10 picked (5 ties).
+
+**Fresh seeds 2-3** (`open_test.py --first-seed 2`): v5 0.430, v5_switch5 0.431, v5_switch20 0.415,
+v4 0.279, v3 0.279, baseline 0.229 (real 0.243). Clean (undamaged) tracking: v5 0.668 vs v4 0.658,
+so the gain is in coping with our tracker's faults.
+
+**Team right on live frames** (live in the answers and v4):
+
+| Situation | share | v4 | v5 |
+|---|---|---|---|
+| ball travelling, nobody within 1 m | 66% | 78.4% | 88.5% |
+| ball at a player's feet | 26% | 90.5% | 93.5% |
+| ball missing | 7% | 71.1% | 84.2% |
+| all | | 81.0% | 89.5% |
+
+**What the model leans on** (`--importance`: shuffle one family, accuracy drop): team shape 17.1
+points, ball 5.4, before/after 2.4, control events 2.1, near 0.3. The arrangement of the two teams
+(who pushes up and spreads, who drops goal-side of the ball) is the strongest clue; it survives a
+smoothed or missing ball.
+
+**Possession counts.** Practice: truth 4.53 per minute, v4 3.54, v5 3.37 (switch 5: 3.76; 3: 4.06).
+Our match: v5 2.82 vs v4 3.45; damage test window 10.8 vs truth 17 (v4 15.0). v5 merges some short
+possessions; on practice that costs less than v4's flicker. Next to study.
+
+**Transfer to our match.** Mean confidence max(p, 1-p) on our match's live frames 0.904, unsure
+(0.3-0.7) 11%: the same as on practice (0.88-0.91, 11-16%).
+
+**Reproducible.** Two fits on the same rows give identical probabilities; `run.py --method v5`
+from an empty cache (rows and model retrained, 1 min 50 s) gives the same bytes as from the cache.
+
 
 ### 2026-10-26 · Track T pilot 3: WASB ball tracker on the tactical video
 

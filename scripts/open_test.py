@@ -53,6 +53,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--methods", nargs="+", default=sorted(METHODS), choices=sorted(METHODS))
     parser.add_argument("--seeds", type=int, default=2, help="damaged copies per match and scenario")
+    parser.add_argument("--first-seed", type=int, default=0,
+                        help="first damage seed; a new range gives fresh copies to confirm a choice")
     parser.add_argument("--detail", action="store_true", help="also print the per-scenario table")
     args = parser.parse_args()
 
@@ -72,7 +74,7 @@ if __name__ == '__main__':
         gt_codes = pm.label_codes(t["labels"])
         truth_dead.append(float((gt_codes[gt_codes != pm.X] == pm.D).mean()))
         for scenario in SCENARIOS:
-            for seed in range(args.seeds):
+            for seed in range(args.first_seed, args.first_seed + args.seeds):
                 damaged = damage(t, scenario, np.random.default_rng(seed), profile)
                 for m in args.methods:
                     spell, _, d = score(METHODS[m], damaged, gt_codes)

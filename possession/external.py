@@ -74,6 +74,7 @@ def load_source(name, refresh=False):
         t["pitch"] = PITCH
         if name == "tactical":
             t["halves"] = list(half_video_blocks(GAME))
+        t["name"] = name
         return t
     cache = os.path.join(CACHE_DIR, "{}_v{}.npz".format(name, CACHE_VERSION))
     if not refresh and os.path.isfile(cache):
@@ -85,6 +86,7 @@ def load_source(name, refresh=False):
         np.savez(cache, **t)
     t["halves"] = [tuple(int(v) for v in row) for row in t["halves"]]
     t["pitch"] = tuple(float(v) for v in t["pitch"])
+    t["name"] = name  # lets a trained method leave this match out of its training
     return t
 
 

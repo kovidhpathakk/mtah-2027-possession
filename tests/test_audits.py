@@ -1,4 +1,4 @@
-"""Do the audit and alignment scripts measure what they claim? Checked on made-up data.
+"""Do the audit and alignment scripts, and v5's decoder, do what they claim? Checked on made-up data.
 
 Every number in docs/data.md (Data audit) comes from these functions run on the match. Nobody can
 look at the match data to check them (CLAUDE.md), so each function is checked here instead on
@@ -21,6 +21,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import align_broadcast  # noqa: E402
 from possession import damage as damage_kit  # noqa: E402
+from possession import learned  # noqa: E402
 from possession import squads  # noqa: E402
 import audit_tagging  # noqa: E402
 import audit_tracking  # noqa: E402
@@ -154,6 +155,36 @@ class Damage(unittest.TestCase):
             self.assertEqual(out["players"].shape[1], 25 + 2 * damage_kit.SWAP_SLOTS)
             self.assertEqual(len(out["team"]), 25 + 2 * damage_kit.SWAP_SLOTS)
             self.assertTrue(np.isnan(out["speed"][:damage_kit.SPEED_LAG]).all())
+
+
+class Learned(unittest.TestCase):
+    """v5's decoder pays for every change of team; its two views are exact mirrors."""
+
+    def test_decoder(self):
+        p = np.r_[np.full(100, 0.9), np.full(100, 0.1)]
+        p[50] = 0.01  # a one-frame blip is not worth two changes of team
+        dead = np.zeros(200, dtype=bool)
+        team = learned.decode(p, dead, switch_cost=10.0)
+        self.assertEqual(team.tolist(), [learned.HOME] * 100 + [learned.AWAY] * 100)
+        self.assertEqual(learned.decode(p, dead, switch_cost=0.0)[50], learned.AWAY)
+        dead[100:110] = True  # a stoppage: each live stretch is decoded on its own
+        team = learned.decode(np.r_[np.full(100, 0.9), np.full(100, 0.4)], dead, 1000.0)
+        self.assertEqual((team[:100] == learned.HOME).all(), True)
+        self.assertEqual((team[110:] == learned.AWAY).all(), True)
+
+    def test_views_are_mirrors(self):
+        rng = np.random.default_rng(2)
+        n = 3000
+        ball = 0.5 + np.cumsum(rng.normal(0, 0.002, size=(n, 2)), axis=0)
+        ball[1000:1100] = np.nan
+        players = np.clip(ball[:, None, :] + rng.normal(0, 0.15, size=(n, 22, 2)), 0, 1)
+        players[:, :11, 0] *= 0.8  # team 0 sits nearer x = 0
+        t = {"ball": ball, "players": players, "speed": rng.uniform(0, 5, (n, 22)).astype(np.float32),
+             "team": np.array([0] * 11 + [1] * 11, dtype=np.int8), "pitch": (105.0, 68.0)}
+        _, ours, theirs, _ = learned.both_views(t)
+        _, ours_swapped, theirs_swapped, _ = learned.both_views(learned.swapped(t))
+        np.testing.assert_allclose(ours_swapped, theirs, atol=1e-4)
+        np.testing.assert_allclose(theirs_swapped, ours, atol=1e-4)
 
 
 class Squads(unittest.TestCase):
