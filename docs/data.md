@@ -4,6 +4,64 @@ Everything learned about the provided assets: what we may use, what the audits f
 source can be trusted. Numbers are whole-match counts; nothing here is a row, a frame or a cell of
 the match data. The scripts that produced each figure are named in each section.
 
+## Data-quality register
+
+Every problem found in the provided data, and what we do about it. Status: **fixed** (code removes
+or corrects it), **worked around** (the model avoids relying on it), **copied into practice** (the
+fault kit reproduces it so methods are tested against it), **open**.
+
+### Tactical tracking
+
+| Problem | Evidence | Status | Where |
+|---|---|---|---|
+| **Ball-speed column unusable** | filled on 7.8% of visible graded frames, in 28 stretches; best correlation with the ball's movement 0.09 at any lag ±1 s (players' column: 0.93); values ~4× too low | worked around: speed always computed from positions | `control.ball_velocity`, `stoppages.ball_speed` |
+| Player-speed column 7 frames (0.28 s) late | best match with speed from positions at lag 7 (corr 0.95); clean data 0-3 | worked around: used only over ±2 s windows ("are players slow?"), where 0.28 s does not matter; copied into practice | `stoppages.dead_mask`; `damage.py` SPEED_LAG |
+| **Ball missing on 41% of graded frames** | counts | worked around: gaps are read as stoppage clues (v1/v2 rules); copied into practice (3 scenarios). Broadcast ball fills 2% more frames: tested, neutral, kept as an option | `stoppages.py`; `precise.py` |
+| Almost no ball gaps of 1-5 s (the tracker fills short ones) | 1 gap of 1-5 s vs 119 on the broadcast tracker | worked around: surviving gaps (≥ 5 s) are mostly stoppages; copied into practice (gap lengths drawn from ours). Cause unproven | `damage.py` |
+| **Ball path heavily smoothed** (~0.9 s) | sharp velocity changes on 1.9% of live frames vs 9-13% in DFL | copied into practice (23-frame moving average); touch rule being re-tuned for it | `damage.py` BALL_SMOOTH |
+| Ball badly misplaced (5-15 m) on ~3.5% of frames | the two trackers' balls > 5 m apart on 10.5% of frames; the video sided against tactical 1 time in 3 | copied into practice; tactical ball kept as first choice | `damage.py` |
+| Ball "blips" (jumps away and back) | none found; 119 one-frame jumps > 2 m are persistent re-acquisitions | open (not cleaned; normal level vs Metrica) | – |
+| **Frozen "ghost"** (Athletic keeper's track frozen ~10 min across half-time) | position unchanged to the mm; detector found no person there (6%) | **fixed**: objects frozen ≥ 10 s removed | `cleanup.drop_frozen` |
+| 12+ objects in a team (home 8.1%, away 4.7% of frames) | counts; clean data 0% | **half fixed**: near-duplicates and touchline objects removed (→ 4.1% / 2.5%); the rest are real people (officials, subs) per the detector; copied into practice | `cleanup.cap_team` |
+| Touchline tracks (subs, staff) | 33 tracks ≥ 10 s; detector: real people | harmless (never nearest the ball); partly removed by the cap | `cleanup.cap_team` |
+| Players missing (< 18 objects on 9% of frames) | counts; detector sees ~3.6 untracked people per such frame | open; copied into practice | `damage.py` |
+| Wrong team labels (~2% of objects, ~5% in the boxes) | the two trackers disagree on 1.8% (5.1% in boxes) | open (shirt-colour check planned, plan V8); copied into practice | `damage.py` |
+| Referee not tracked | 1 of 333 long tracks looks like a referee | not a problem | – |
+| "6% of player movement filled in" | the same test flags 2-4.5% on clean data | not a problem (false alarm) | – |
+
+### Smart Tagging
+
+| Problem | Evidence | Status |
+|---|---|---|
+| Set-piece tags are fixed 35 s windows, starting ~5 s before the restart | all set-piece tags | open: "precise Smart Tagging" (plan M8) will snap them to the restart frame |
+| Most restarts untagged | 42 of 132 long ball gaps have a set-piece tag | open: our own restart detection must fill the rest (deep dive 2) |
+| Throw-ins carry no team | all throw-in tags | open: the taker's team from tracking (deep dive 2) |
+| Team tags right ~88% in open play, ~60% near the box | vs clear control in tracking | measured; used only as a test so far (team override: no gain) |
+| Kickoff tags timed correctly | contain both real kickoffs | fine |
+
+### Broadcast
+
+| Problem | Evidence | Status |
+|---|---|---|
+| Own timeline, no mapping given | – | **fixed**: aligned per half by ball and player positions (agree to a frame) | 
+| Offset drifts 3 frames over the 1st half | per-window offsets 4,012-4,015 | handled: per-window offsets |
+| Video has 164,487 frames, tracking 164,488 | file complete | harmless |
+| 38% of frames show no pitch (close-ups, crowd), 14% replays | alignment fit | flagged per frame; usable as a stoppage clue (plan S6) |
+
+### Audio and commentary
+
+| Problem | Evidence | Status |
+|---|---|---|
+| Whisper looped on the long, noisy commentary (5 lines = 86% of the first transcript) | counts | **fixed**: voice-activity detection, no carried-over text |
+| Commentary names Barça 3× as often as Athletic and does not narrate possession | name test and LLM test both at chance | worked around: not used for the team call |
+
+### Video
+
+| Problem | Evidence | Status |
+|---|---|---|
+| Wide tactical view illegible to a small vision model (players a few pixels tall) | pilot 1: "stopped" on 100% of frames | worked around: crops around the action (pilot 2, parked for memory) |
+| 8 GB laptop: a 4B vision model swaps, filled the disk | 2026-10-26 | one heavy job at a time; overnight runs with apps closed |
+
 ## Rules of use
 
 The rules allow **any algorithm** on **any provided asset**, plus external data and models that the

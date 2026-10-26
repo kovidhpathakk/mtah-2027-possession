@@ -16,50 +16,90 @@ Kept so no source is quietly forgotten (Smart Tagging went unused until 2026-10-
 |---|---|---|---|
 | Tactical tracking | ✅ everything (v3) | audits | – |
 | Tactical homography | ❌ | video audit (pitch ↔ pixels) | mapping video detections into the model |
-| **Smart Tagging** | ❌ **not used** | audited: team tags ~88% right in open play, ~60% near the box; set pieces vague, 2 of 3 restarts missing | **team clue where control is unclear; set-piece windows → restarts** (M8, M9) |
+| **Smart Tagging** | ❌ not in the model | audited; team-tag override where v4 is stale tested: no gain | **set pieces → restarts** (dive 2), goal tags (dive 4), team tags as weighted decoder evidence (M8c), phase-level check (M8d) |
 | Tactical video | ❌ | detector audit (420 frames); vision pilot | football-trained detectors, Qwen3-VL, ball in gaps, ball in the air, shirt colours (V2-V8) |
 | Tactical audio | ❌ | alignment test only | **whistles** (S4), crowd noise (S5) |
-| Broadcast tracking | ❌ (fill tested, neutral) | alignment, audits, second witness | its ball when tactical's is wrong; replays as a stoppage clue (S6) |
+| Broadcast tracking | ❌ (fill tested, neutral) | alignment, audits, second witness | its ball in live-play gaps (dive 3); **camera behaviour (close-ups, crowd shots, replays) as a stoppage clue** (S8, dive 4) |
 | Broadcast homography | ❌ | – | mapping broadcast-video detections |
 | Broadcast video | ❌ (deleted to save disk) | audio extracted | **close-up views for vision models**: players and ball are far bigger than in the wide tactical view; replays follow key events. Needs a re-download (14 GB) |
 | Broadcast audio / commentary | ❌ | transcript; keyword events; LLM labels (weak) | **event-focused LLM pass with a larger model** (S3e) |
 | Public 5-minute answers | sanity check only (never tuned on) | – | – |
-| Open data (DFL, Metrica) | practice test; settings for v2/v3 | control audit | **training a learned model** (M15); imitation clues (M9) |
+| Open data (DFL, Metrica) | practice test; every setting of v2-v4 | control audit; case drawings | **trained models**: control classifier (M19), possession model (M15), Ball Radar-lite (M11), stoppage classifier (M18), team shape (M21), decoder statistics (M22); imitation clues (M9) |
 
-## Working mode (from 2026-10-26): deep dives
+## Roadmap (rewritten 2026-10-26)
 
-One problem at a time, ordered by points at stake, each 2-3 days: (1) anatomy of the errors,
-(2) real cases on the practice matches, (3) what the research says, (4) a fix using whichever
-sources help (tracking, Smart Tagging, video, audio, commentary), (5) test on practice with fresh
-seeds, then sanity checks on our match, (6) a one-page write-up in `docs/deep-dives/`. A weekly
-freeze keeps a validated submission of the best model at all times.
+**Principles.** Make the practice test honest first (everything is judged on it). One problem at
+a time, ordered by points at stake: perfect team calls in live play are worth up to +0.36 on
+practice, perfect stoppages +0.08. In each deep dive, try **every** relevant source and
+technique (tracking rules, the papers, models trained on the 8 practice matches, Smart Tagging,
+tactical and broadcast video, audio, commentary), look at real cases before fixing, test on fresh
+seeds, then check on our match. One heavy job at a time. A weekly freeze keeps a validated
+submission of the best model.
 
-| Dive | Problem | Status |
+**Each deep dive:** (1) anatomy of the errors, (2) real cases (practice: top-down drawings;
+our match: overlay clips Kovidh watches), (3) the research, (4) fixes from every source below,
+(5) practice test with fresh seeds, then our match's checks, (6) write-up in `docs/deep-dives/`.
+
+### Deep dive 1: the team call while the ball travels (passes, loose balls): in progress
+
+| Track | Experiment | Rows | Status |
+|---|---|---|---|
+| Tracking + papers | touch rule (Vidal-Codina, Link & Hoernig) → **v4** | M7b | ✅ done |
+| Tracking + papers | duel rule ("holder keeps the ball") | M7c | ✅ dropped (blocks real tackles) |
+| Data check | our ball is smoothed: copy into practice, re-tune the touch rule | P1c, M7e | ⏳ running |
+| Papers | Link & Hoernig's end-of-possession rule: possession ends when no teammate can reach the ball's predicted position within 1 s | M20 | next |
+| **Trained on DFL** | **control classifier** (Link & Hoernig's features: duration, ball speed and acceleration, opponents within 0.5-5 m) trained on DFL's true possession changes | M19 | next |
+| **Trained on DFL** | **learned possession model** (Borghesi 2023: a sequence model over tracking features) giving P(home / away) per frame | M15 | next |
+| Smart Tagging | team tags overriding v4 when stale | M8b | ✅ no gain |
+| Smart Tagging | team tags as **weighted evidence** in the decoder, and a phase-level check (v4 contradicting a whole high-trust phase) | M8c, M8d | planned (decoder) |
+| Video (tactical) | detector + shirt colours to check team labels in the boxes | V8 | planned |
+| Video (tactical) | vision model on crops: "is the ball in the air?" (a nearby opponent does not have it) | V7 | planned (overnight) |
+| Our match | larger case review; overlay clips for Kovidh | M7d, V16 | next |
+
+### Deep dive 2: the first seconds after a stoppage (who restarts)
+
+| Track | Experiment | Rows |
 |---|---|---|
-| 1 | Team call with the ball travelling (passes, loose balls) | **in progress** (v4 adopted; Smart Tagging tried, no gain; touch rule being re-tuned for our smoothed ball): `docs/deep-dives/01-ball-travelling.md` |
-| 2 | The first seconds after a stoppage (who restarts) | next |
-| 3 | Ball missing in live play | planned |
-| 4 | Stoppage edges | planned |
+| Tracking + papers | **restart detector from player positions** (Vidal-Codina): throw-in taker beyond the touchline, corner taker at the flag, keeper in the goal area for a goal kick, kickoff formation; the taker's team gets the ball | M23, M10 |
+| Smart Tagging | **precise set pieces**: snap each 35 s window to the restart frame; type; taker's team; imitation tags to test | M8, M9 |
+| Commentary | event-focused pass: "free kick to Athletic", "corner for Barcelona" (keywords find candidates, a local LLM judges each) | S3e |
+| Video (tactical) | detector finds the ball at the restart moment: which spot (touchline, corner flag, goal area, centre) | V14 |
+| Trained on DFL | restart team from the configuration of both teams at the restart | M23 |
 
-## Order of work (reordered 2026-10-26)
+### Deep dive 3: ball missing in live play (5.3 min of our match; v4 wrong ~28% there)
 
-The logic: **make the test honest first** (everything is measured on it), **research before
-building** the biggest lever, **team-call work before stoppage work** (perfect team calls are worth
-+0.36 on practice, perfect stoppages +0.08), **clues before the decoder** that combines them, and
-long jobs in the background whenever the machine is free.
-
-| Step | Backlog rows | Why here |
+| Track | Experiment | Rows |
 |---|---|---|
-| 1 | P1b: missing faults in the practice damage | ✅ done. Practice baseline now 0.248 vs its real 0.243 |
-| 2 | V3: vision-model pilot (30 frames) | running in the background; decides whether V3 is worth a full run |
-| 3 | M17: focused research pass (Borghesi TCN, PathCRF, how DFL defines possession, pass/reception detection, whistle detection) | shapes steps 4-5 and 8 before we build them |
-| 4 | M7b: possession part 2, for passes and loose balls (59% of live play, 16% wrong) | the largest pile of team errors |
-| 5 | M15: learned possession model trained on DFL | may beat or absorb step 4; compared on practice |
-| 6 | M10: who restarts (first 3 s after a stoppage: 23% wrong) | second-largest team error |
-| 7 | V2 / V6: detector finds the ball in live-play gaps (5.3 min of our match), overnight | ball missing in live play: 28% wrong |
-| 8 | Stoppage clues: S4 whistles, M8 precise Smart Tagging, M9 imitation clues, S3c commentary for rare stoppages, V3 if the pilot works | each one tested on practice through the imitation clues |
-| 9 | M12 decoder (with M16 PathCRF ideas, M11 Ball Radar-lite) | combines every clue above |
-| 10 | P3-P7: merge organiser docs, reproducible pipeline, clean-up, technical document, submit by ~15 Nov | |
+| Tracking | **broadcast tracker's ball** where tactical has none (tested as a fill: neutral; retest inside this dive) | M5 |
+| Papers + trained on DFL | **Ball Radar-lite** (Kim 2023): which team has the ball from player movement, trained on DFL with the ball hidden | M11 |
+| Papers | **PathCRF** (2026): possession without the ball, via the most probable player-to-player path | M16 |
+| Trained on DFL | **team-shape clue**: the team advancing in an open shape vs the team retreating compactly | M21 |
+| Video (tactical) | **football-trained detector** finds the ball in those frames (it was visible in ~2/3 of gap frames) | V2, V6, V9 |
+| Video (broadcast) | close-up camera often still shows the ball when the wide view loses it (needs re-download) | V10 |
+
+### Deep dive 4: stoppage edges (when play stops and restarts; worth up to +0.08)
+
+| Track | Experiment | Rows |
+|---|---|---|
+| Audio (tactical) | **whistle detector**: signal processing (3-4.5 kHz tone, duration) plus a pretrained audio classifier; marks fouls, offsides, half ends | S4 |
+| Audio | crowd-noise level: rises on attacks and shots, drops in long breaks | S5 |
+| Broadcast (no video needed) | **camera behaviour as a stoppage clue**: close-ups, crowd shots and replays happen when play stops; already flagged per broadcast frame by the alignment | S6, S8 |
+| Commentary | rare long stoppages (goals, cards, injuries, VAR, substitutions) | S3c, S3e |
+| Video (tactical) | vision model on crops and frame sequences: "is play stopped?" (overnight, apps closed) | V12, V13 |
+| Trained on DFL | **learned stoppage classifier** (gap length, ball position at loss/return, team speed, still ball, restart shapes) vs v2's hand rules | M18 |
+| Smart Tagging | goal tags: long stoppages after goals | M8 |
+
+### Then: the decoder, combining everything
+
+| Experiment | Rows |
+|---|---|
+| HMM/Viterbi over H/A/D: per-frame evidence from every clue above, weights learned on the practice matches (with imitation clues for Smart Tagging, commentary, whistles), transition and duration statistics learned from DFL | M12, M22 |
+
+### Finally
+
+| Step | Rows |
+|---|---|
+| Merge the organisers' latest docs; reproducible pipeline (`run.py` regenerates every derived input); remove unused variants; technical document (from `model.md`, `data.md`, `sources.md`, `deep-dives/`); validated final submission by ~15 Nov | P3-P7 |
 
 ## Model
 
@@ -86,6 +126,14 @@ long jobs in the background whenever the machine is free.
 | M14 | Visible-ball stoppages where the ball is carried, not still | v2 weaknesses | planned | e.g. walking to a throw-in |
 | M15 | **Learned possession model**: a sequence model trained on the DFL matches' per-frame possession, as in Borghesi et al. 2023 (Temporal Convolutional Networks on tracking data, *Expert Systems with Applications*) | research 2026-10-26 | planned | DFL gives ~1.4 million labelled frames; leave-one-match-out testing |
 | M16 | **Ball-free possession and events** with a CRF/Viterbi over player-to-player paths, as in PathCRF (arXiv 2602.12080, KDD'26) | research 2026-10-26 | planned | targets live play with the ball missing, and fits the decoder (M12) |
+| M18 | **Learned stoppage classifier** trained on DFL (gap length, where the ball vanished and returned, team speed, still ball, restart shapes) vs v2's hand rules | deep dive 4 | planned | |
+| M19 | **Learned control classifier** trained on DFL's true possession changes, with Link & Hoernig's features (duration, ball speed and acceleration, opponents within 0.5-5 m) | Link & Hoernig 2017 | next (dive 1) | |
+| M20 | End-of-possession rule: possession ends when no teammate can reach the ball's predicted position within 1 s | Link & Hoernig 2017 | next (dive 1) | |
+| M21 | Team-shape clue for who has the ball while it is missing (advancing open shape vs retreating compact shape), learned on DFL | tactics literature | planned (dive 3) | |
+| M22 | Decoder statistics learned from DFL: possession and stoppage length distributions, switch rates | our design | planned (decoder) | |
+| M23 | **Restart detector from player positions** (throw-in taker beyond the touchline, corner taker at the flag, keeper in the goal area, kickoff formation); taker's team gets the ball | Vidal-Codina 2022 | next (dive 2) | |
+| M8c | Smart Tagging team tags as weighted evidence in the decoder (not a hard override) | deep dive 1 | planned | |
+| M8d | Phase-level check: v4 contradicting an entire high-trust Smart Tagging phase | deep dive 1 | planned | |
 | M17 | Wider research pass: MLSA/ECML sports-analytics workshops, SoccerNet game-state, 2024-26 possession and event-detection papers | Kovidh, 2026-10-26 | planned | |
 
 ## Sources and clues
@@ -103,6 +151,9 @@ long jobs in the background whenever the machine is free.
 | S5 | Crowd-noise level (rises on attacks, drops in long stoppages) | planned | |
 | S6 | Broadcast replays as a stoppage clue (replays follow stoppages) | planned | replays already detected by `align_broadcast.py` |
 | S7 | Smart Tagging team tags as weighted clues | planned | via the decoder (M12) |
+| S8 | **Broadcast camera behaviour as a stoppage clue**: close-ups, crowd shots and replays (no live pitch in view), mapped to tactical time; needs only the broadcast tracking and homography we already have | planned (dive 4) | already flagged per frame by `align_broadcast.py` |
+| S9 | Snap events (Smart Tagging, commentary) to the exact tracking moment with trajectory-based event/tracking synchronisation (ELASTIC, arXiv 2608.30227) | planned (dives 2, 4) | |
+| S10 | Ball-strike sounds in the audio (kick onsets) | planned, low priority | probably drowned by crowd noise |
 
 ## Video (all local models; Claude never sees frames)
 
@@ -113,6 +164,9 @@ long jobs in the background whenever the machine is free.
 | V3 | Local vision-language model: "is play stopped?" on chosen frames | done (pilot); model removed to free disk | **failed**: qwen2.5vl:3b says "stopped" on 100% of frames in every group; 26 s per frame. The wide view is illegible to it |
 | V12 | Vision pilot 2: crops around the action (tracking + homography), 2-3 frames a second apart, Qwen3-VL 4B | parked until deep dives 3-4 | blocked twice: first by memory (4.1 GB model with apps open), then the disk filled with swap (324 MB free) and macOS ran out of memory. Run it alone, overnight, apps closed |
 | V13 | Qwen3-VL 2B pilot with crops and sequences | planned | fits in memory; weaker |
+| V14 | Detector finds the ball at restart moments: which spot (touchline, corner flag, goal area, centre) | planned (dive 2) | |
+| V15 | Detector counts people on the pitch to measure missing players | planned, low priority | |
+| V16 | **Overlay clips of our match for Kovidh** (tracking drawn on the tactical video) for each dive's error types | next (dive 1) | Kovidh watches and describes in general terms |
 | V9 | **Best vision models that fit the laptop**: Qwen3-VL 4B (8B needs ~12 GB); football-trained detectors (YOLOv11 "soccana": players/ball/referees; RF-DETR ball) | planned (after the pilot) | check licences and that none was trained on our match |
 | V10 | **Re-download the broadcast video** and run vision models on its close-ups (mapped to tactical time by the alignment) | planned, Kovidh to download | players and ball are far larger than in the wide tactical view |
 | V11 | Cloud GPU for bigger vision models | needs the organisers' OK | the FAQ forbids giving the video to third-party hosted or cloud LLMs; a self-run model on a rented GPU is unclear: ask before trying |
