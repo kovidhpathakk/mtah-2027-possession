@@ -67,4 +67,5 @@ matches is allowed.
     python scripts/guard.py                     the data-leak check
 
 New methods go in possession/methods.py; run.py and both test scripts pick them up from there.
-Log every experiment in docs/experiments.md.
+Log every experiment in docs/experiments.md, and update docs/progress.md (timeline, model
+versions, next steps) after every step.

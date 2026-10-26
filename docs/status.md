@@ -1,7 +1,7 @@
 # Status and next steps
 
-Read this first when picking the project up, together with CLAUDE.md, docs/experiments.md and
-docs/research.md. Updated 2026-10-25.
+Read this first when picking the project up, together with CLAUDE.md, **docs/progress.md**
+(everything done so far, model versions, next steps), docs/experiments.md and docs/research.md. Updated 2026-10-25.
 
 ## Where things are
 
