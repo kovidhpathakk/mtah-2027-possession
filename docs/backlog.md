@@ -18,7 +18,8 @@ Last updated: 2026-10-26.
 | M4 | Flicker tidy-up | bug found testing v2 | done | in v2 |
 | M5 | Precise tracking: ball blips, Savitzky-Golay smoothing, broadcast ball fill | Vidal-Codina, audit | done | neutral; `v2_precise` kept as an option |
 | M6 | Better ball-gap rules: sweep thresholds; new clue "how far the ball moved while missing" | Kovidh's idea | done | gaps classified 83% right (was 74%) but score unchanged; `v2_return` kept as an option. **Oracle test: the team call in live play costs ~4× more than stoppages** |
-| M7 | **Possession logic**: control vs touch, kick = acceleration jump ≥ 4 m/s², a pass stays with the passer's team, duels don't flip | **Link & Hoernig 2017**, Vidal-Codina (duel zone) | **now** | **the biggest lever**: perfect team calls would lift practice 0.31 → 0.72 |
+| M7 | Possession logic: control (within 1 m for 3 frames), duels don't flip, a pass stays with the passer's team | Link & Hoernig 2017, Vidal-Codina 2022 | done | **v3**: practice 0.311 → 0.377, better in 48/48 runs |
+| M7b | Possession logic, part 2: kick detection (ball acceleration ≥ 4 m/s²) and ball-speed checks for real control, to sharpen when control starts | Link & Hoernig 2017 | next 1 | the team call can still gain up to 0.72 |
 | M8 | Precise Smart Tagging: exact restart frame inside each 35 s window, taker's team, trust per tag type | Smart Tagging audit | next 2 | |
 | M9 | Imitation clues on the practice matches (fake Smart Tagging and commentary from their event lists, with our sources' measured flaws) | our design | next 3 | so commentary and tagging can be tested fairly |
 | M10 | Who restarts: the taker's team gets the ball from the restart frame | Vidal-Codina | next 4 | |

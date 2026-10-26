@@ -9,6 +9,7 @@ hundreds of times. A method must be deterministic: same arrays in, same labels o
 from possession import baseline, blackout, cleanup, stoppages
 
 METHODS = {
+    "v3": lambda tracking, frames=None: stoppages.predict(tracking, frames, team_by="control"),
     "v2": lambda tracking, frames=None: stoppages.predict(tracking, frames),
     "v2_precise": lambda tracking, frames=None: stoppages.predict(tracking, frames, precise=True),
     "v2_return": lambda tracking, frames=None: stoppages.predict(

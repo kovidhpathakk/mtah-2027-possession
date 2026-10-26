@@ -32,7 +32,7 @@ The tracking is cleaned first (possession.cleanup).
 
 import numpy as np
 
-from possession import baseline, cleanup, precise as precise_module
+from possession import baseline, cleanup, control, precise as precise_module
 from possession.blackout import missing_runs, vote_with_hold, windowed_mean
 from possession.tracking import PITCH
 
@@ -146,7 +146,7 @@ def vote_within_live(codes, dead, window):
 
 
 def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False, precise=False,
-            **gap_options):
+            team_by="vote", control_options=None, **gap_options):
     """H/A/D per frame. rules / clean / live_vote / precise switch parts on and off, to measure
     what each adds. precise=True runs possession.precise (which includes the clean-up)."""
     if precise:
@@ -155,8 +155,12 @@ def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False, pre
         tracking = cleanup.clean(tracking)
     codes = baseline.nearest_team(tracking["players"], tracking["ball"], tracking["team"], frames)
     dead = tidy(dead_mask(tracking, rules, **gap_options))
-    team = vote_within_live(codes, dead, VOTE_WINDOW) if live_vote \
-        else vote_with_hold(codes, VOTE_WINDOW)
+    if team_by == "control":
+        team = control.team_by_control(tracking, dead, codes, **(control_options or {}))
+    elif live_vote:
+        team = vote_within_live(codes, dead, VOTE_WINDOW)
+    else:
+        team = vote_with_hold(codes, VOTE_WINDOW)
     labels = np.where(team == HOME, "H", "A").astype("<U1")
     labels[dead] = "D"
     return labels

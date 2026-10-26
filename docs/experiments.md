@@ -5,12 +5,35 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 | Date | Who | Branch | What changed | Public spellF1 / macroF1 | Damage-test spellF1 (mean ± spread) | Possessions (full match) | Mean length (s) | D share | Notes |
 |---|---|---|---|---|---|---|---|---|---|
+| 2026-10-26 | Claude | phase1-tools | **v3** = v2 stoppages + team by **control** (`possession/control.py`, Link & Hoernig 2017, Vidal-Codina 2022): a team gains the ball when its player holds it within 1 m for 3 frames with no opponent within 1 m; held through passes, loose balls and duels; no smoothing | 0.3565 / 0.6465 | – | 467 | 8.1 | 40% | Practice 0.377 vs v2 0.311; better in 48/48 match × scenario × seed runs on fresh seeds. Our match: fewer short possessions (10% vs 14%), Smart Tagging agreement 70/74% (truth 70/75%), quiz transF1 0.31 vs 0.21; quiz spellF1 0.357 vs 0.371 is within its noise |
 | 2026-10-25 | Claude | phase1-tools | **v2** (`possession/stoppages.py`): clean-up; dead if ball > 1 m out, ball still ≥ 2 s, or a gap ≥ 1 s with slow players / at an edge / ≥ 20 s; tidy flicker; plain ±2 s vote | 0.3714 / 0.6602 | 0.277 (0.193–0.358) | 496 | 7.6 | 40% | Open-data test 0.388 / 0.298 / 0.250 vs v1 0.349 / 0.272 / 0.233; D share 42% vs truth 43%. Byte-identical on rerun |
 | 2026-10-24 | Claude | phase1-tools | blackout_v1: long blackout = D, medium blackout D only if players slow (<1.0 m/s), otherwise hold the last team | 0.3619 / 0.5236 | 0.277 (0.190–0.354) | 510 | 8.4 | 32% | Better spellF1 on both tests, but predicts no D at all in the public window (truth 20%): its stoppages there are short or have the ball visible. macroF1 drops. Next: detect stoppages with the ball visible |
 | 2026-10-23 | Claude | phase1-tools | Insurance: baseline smooth50 + match rules (X outside halves, D before 2nd-half kickoff) | 0.3256 / 0.6207 | 0.226 (0.148–0.316) | 584 | 7.2 | 34% | Uploaded as our safety entry |
 | 2026-10-23 | — | main | Baseline smooth50, unchanged | 0.3256 / 0.6207 | 0.226 (0.148–0.316) | 594 | 7.2 | 32% | Reference. Full-match spellF1 0.2433 per EVALUATION.md |
 
 ## Findings
+
+### 2026-10-26 · v3: possession by control (Link & Hoernig, Vidal-Codina)
+
+Sweep on the damaged practice matches (seed 0; 4 reach × 3 duel × 4 hold settings): best reach
+1.0 m, duel 1.0 m, 3 frames = 0.377 (v2's vote 0.309); the next seven settings 0.350–0.370; the
+worst 0.124. The winning distances are the papers' own. Check on fresh seeds 5 and 6:
+
+| Match | v2 | v3 |
+|---|---|---|
+| metrica3 | 0.344 | 0.397 |
+| dfl-J03WMX | 0.287 | 0.381 |
+| dfl-J03WN1 | 0.300 | 0.374 |
+| dfl-J03WOH | 0.321 | 0.392 |
+| dfl-J03WOY | 0.286 | 0.378 |
+| dfl-J03WPY | 0.330 | 0.371 |
+| dfl-J03WQQ | 0.323 | 0.366 |
+| dfl-J03WR9 | 0.300 | 0.360 |
+| **mean** | **0.311** | **0.377** |
+
+v3 is better in all 48 runs. The oracle ceiling for the team call is 0.72, so there is more to
+gain here (ball in flight, the first touch after a restart, gaps).
+
 
 ### 2026-10-26 · Ball-gap rules, and where v2 loses its points
 

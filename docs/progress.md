@@ -17,7 +17,7 @@ Last updated: 2026-10-25.
 
 | | |
 |---|---|
-| **Best model** | **v2**: practice matches 0.31, quiz 0.371 (v1: 0.29, 0.362; baseline: 0.26, 0.326) |
+| **Best model** | **v3**: practice matches 0.38, quiz 0.357 (v2: 0.31, 0.371; v1: 0.29, 0.362; baseline: 0.26, 0.326) |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
 | **Working on** | commentary (transcribing locally), then precise Smart Tagging, who restarts, the decoder |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
@@ -64,7 +64,8 @@ Code names in brackets are what the scripts call each model.
 | v1 (`blackout_v1`) | 0.29 | 0.35 / 0.27 / 0.23 | 0.362 | – | 32% | superseded |
 | v1 + clean-up (`blackout_v1_clean`) | 0.28 | 0.35 / 0.27 / 0.23 | – | – | – | no gain |
 | v2 + precise tracking (`v2_precise`) | 0.31 | as v2 | 0.370 | – | 39% | neutral; kept as an option |
-| **v2** (`v2`) | **0.31** | **0.39 / 0.30 / 0.25** | **0.371** | – | **40%** | **current best** |
+| v2 (`v2`) | 0.31 | 0.39 / 0.30 / 0.25 | 0.371 | – | 40% | superseded |
+| **v3** (`v3`) | **0.38** | – | 0.357 | – | **40%** | **current best** |
 
 ---
 
@@ -247,6 +248,7 @@ terms.
 | **Commentary analyst** (`scripts/commentary_llm.py`): a local LLM (Ollama, qwen3:4b) labels every line: who has the ball, live or stopped, which event; checked against the tracking at different commentary delays; plus a general description (no times, scores or incidents) | ✅ pilot works (all lines labelled) | – |
 | Better ball-gap rules (your idea): new clue "how far the ball moved while missing" | ✅ done | a ball coming back within 3 m of where it vanished = 98% stoppage; gaps classified 83% right (was 74%), **but the score didn't move** |
 | **Where are the points lost?** What-if test on the practice matches | ✅ done | perfect stoppages would give 0.40; **perfect team calls in live play would give 0.72**. The team call is the biggest lever, so the possession paper (Link & Hoernig) goes next |
+| **v3: possession by control** (Link & Hoernig, Vidal-Codina). A team gains the ball when its player keeps it within 1 m for 3 frames with no opponent within 1 m; it keeps the ball through passes, loose balls and duels; changes land on the exact frame, with no smoothing | ✅ done | **practice 0.311 → 0.377, better in all 48 runs**. The best distances found were the papers' own. Our match: fewer fake short possessions, Smart Tagging agreement in line with the truth's. Quiz 0.357 vs 0.371: within its noise |
 | Precise Smart Tagging: snap each set-piece window to the actual restart, add the taker's team, trust per tag type | next | – |
 | Commentary → events: rules first (keywords, squad names), a local LLM second | after transcription | – |
 | Imitation clues on the practice matches, from their event lists | planned | – |
