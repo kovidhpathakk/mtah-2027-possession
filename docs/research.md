@@ -263,6 +263,25 @@ loader converts it. DFL's labels give dead ball at **41–52%** of each match, w
 "40–45% dead" estimate from published ball-in-play figures. Metrica's event-derived labels give
 27%, because events mark stoppages less completely than a tracking flag does.
 
+### Checked against the video itself (`scripts/video_audit.py`)
+
+A COCO-trained person and ball detector (torchvision Faster R-CNN, never trained on this match),
+run locally on 60 sampled frames per question, mapped to the pitch through the homography and
+compared with the tracking. Counts only.
+
+| Question | Result | Verdict |
+|---|---|---|
+| Does the detector work here? | finds a person within 2 m of **94%** of ordinary tracked objects; a ball within 3 m of the tracker's ball on 80% of ordinary frames | good enough to judge the tracking |
+| Is the box ghost a person? | **6%** confirmed (vs 94%) | **No**: a frozen leftover track, as the tracking analysis found |
+| Are touchline tracks people? | 99% confirmed | yes: substitutes and staff, tracked as players |
+| Are the extra objects (12+ in a team) people? | 95% confirmed for the whole team on those frames; if the 12th were not a person this would fall to ~86% | mostly real people (officials, subs?) labelled as a team |
+| Does the tracker miss players? | untracked people seen per frame: 7.1 on "fewer than 18" frames vs 3.5 on ordinary ones (referee and assistants are never tracked) | **yes**: ~3–4 players missing on those frames |
+| Is the ball visible during the tracker's ball gaps? | a ball on the pitch in **67%** (gaps 5–20 s) and **70%** (20 s+) of gap frames, vs 95% on ordinary frames | **yes, mostly**: the tracker drops a visible ball, which fits "gaps are stoppages" |
+| When the two trackers' balls are > 5 m apart, who is right? | detector's ball closer to tactical 23, broadcast 11, neither 29 | tactical right about twice as often; keep the tactical ball |
+
+Ball detection is the weaker half (it also finds ball-like things), so the ball rows are
+indicative, not exact.
+
 ### Smart Tagging, checked against the tracking (not against any answers)
 
 - **Team tags are good in open play, weak near the box.** Tagged team in clear control

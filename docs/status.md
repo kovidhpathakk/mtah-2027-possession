@@ -54,6 +54,7 @@ docs/research.md. Updated 2026-10-25.
 |---|---|---|
 | A | Data audit (tracking, Smart Tagging, broadcast alignment, confirmation by second tracker) | ✅ 2026-10-25 |
 | B | Open data: downloaded, loaded with H/A/D labels, control audit, fault kit (`possession/damage.py`), 8-match test (`scripts/open_test.py`), calibrated against the published baselines | ✅ 2026-10-25 |
+| A+ | Video audit with a local detector (`scripts/video_audit.py`, `.venv-video`) | ✅ 2026-10-25 |
 | C | v2: clean-up (motionless ghosts, cap 11, ball jumps) + restart detector + possession logic | beats v1 on the new test |
 | D | Decoder (HMM/Viterbi) over v2's clues | beats v2 |
 | E | Audio: whistle detector, then commentary (Whisper + small local LLM) | each clue helps, or is dropped |

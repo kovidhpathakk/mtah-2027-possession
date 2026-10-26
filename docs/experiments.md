@@ -11,6 +11,15 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-25 · Video audit (detector run locally, 420 frames)
+
+- Detector confirms 94% of ordinary tracked objects, 6% of the box ghost (not a person), 99% of
+  touchline tracks (real people). On "fewer than 18" frames it sees ~3.6 more untracked people.
+- A ball is visible on the pitch in ~2/3 of the tracker's ball-gap frames: the tracker drops a
+  visible ball, so gaps are mostly stoppages, not occlusions.
+- Tracker disagreements: tactical's ball is right about twice as often as broadcast's.
+
+
 ### 2026-10-25 · The ghost explained; clean-up does not move the score
 
 - The ghost in Barça's box is the Athletic keeper's track **frozen** (position unchanged to the
