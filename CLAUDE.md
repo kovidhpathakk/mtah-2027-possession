@@ -54,6 +54,10 @@ matches is allowed.
     python scripts/damage_test.py               public 5 min with realistic ball blackouts
     python scripts/sanity_report.py             does a full-match submission look like football
     python scripts/gap_clips.py                 local clips of the longest ball blackouts
+    python scripts/audit_tracking.py [--source broadcast]   what is wrong with the tracking
+    python scripts/audit_tagging.py             Smart Tagging checked against the tracking
+    python scripts/extract_audio.py             soundtracks to data/derived/ (16 kHz WAV)
+    python scripts/align_broadcast.py           broadcast -> tactical frame offsets, replays
     python evaluation/validate_submission.py F  check a submission
     python evaluation/run_evaluation.py         score everything in evaluation/results/
     python scripts/guard.py                     the data-leak check

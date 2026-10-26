@@ -11,6 +11,23 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-25 · Data audit: tracking, Smart Tagging, broadcast alignment
+
+Full numbers in docs/research.md §7. The ones that change what we build:
+
+- The tactical tracker fills in ball gaps under ~5 s itself (only 1 gap of 1–5 s, against 119 on
+  the broadcast tracker). Every surviving gap is ≥ 5 s, and there are 132 of them: roughly a
+  match's worth of restarts. v1's "medium gap is dead only if players are slow" is probably too
+  strict; the restart detector should decide instead.
+- Ball speed column: unusable. Player speed column: correct but 7 frames late.
+- Keeper mix-up in Barça's box: ~3,400 frames, mostly 2nd half. Touchline tracks labelled as
+  players: 33 of 10 s or more.
+- Smart Tagging covers only 42 of the 132 long gaps with a set-piece tag, and its set-piece
+  windows are a fixed 35 s. Team tags are reliable in open play (87–89%), weak near the box (~60%).
+- Broadcast aligned to tactical from the tracking alone (ball and players agree to a frame).
+  Audio cross-correlation is too weak to align with.
+
+
 ### 2026-10-23 · Is the damage test honest? Calibrated against the four published baselines
 
 | Baseline | Public 5 min | Damage test (100 runs) | Real full match |

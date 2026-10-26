@@ -24,13 +24,13 @@ understanding only; they cannot become labels or a validation set.
 | Asset | Status | Usable signals |
 |---|---|---|
 | Tactical tracking | ✅ verified | player x, y, speed per slot; ball x, y (59.3% of graded frames); team per slot |
-| Ball speed column | ⚠ filled on only 8.7% of visible frames | compute from position changes instead |
+| Ball speed column | ❌ filled on 7.8% of visible frames and does not match the ball's movement (corr 0.06) | compute from position changes instead (§7) |
 | Smart Tagging | ✅ verified | 638 phases with team, 59 set pieces with type, timed to the video |
 | Homography (tactical) | ✅ 100% valid | pitch ↔ pixel, for overlays and our own detections |
 | Tactical video | ✅ 199,319 frames | anything a local vision model or detector can extract |
 | **Tactical audio** | ✅ stereo AAC, 48 kHz, whole recording | referee whistles, crowd noise |
-| Broadcast tracking + homography | ✅ verified, unsynced | second view; needs alignment |
-| Broadcast video + commentary | ❌ deleted locally (14 GB) | re-download if we decide to use it |
+| Broadcast tracking + homography | ✅ verified, **aligned to tactical** (§7) | second ball view; replay detection |
+| Broadcast video + commentary | ✅ re-downloaded 2026-10-25; audio extracted to `data/derived/`; **commentary is in English** | whistles, commentary via local Whisper |
 | Public answers | ✅ 5 min, 17 possessions | checking correctness, never tuning |
 | Labelled **other** matches | allowed in any amount | training and validating learned models (section 3) |
 
@@ -81,6 +81,13 @@ within 3 s of manual annotations.
   our ground truth uses for loose balls.
 - Reported F-score 0.83 for individual possession on 60 Bundesliga matches.
 
+### Kim et al. 2023 — Ball Radar: the ball's path from the players alone
+"Ball trajectory inference from multi-agent sports contexts using set transformer and hierarchical
+bi-LSTM", KDD 2023. [arXiv](https://arxiv.org/abs/2306.08206) · [code](https://github.com/pientist/ballradar)
+
+First guesses which player has the ball, then where the ball is, from player movement only. Exactly
+what our blackouts need, but heavier: a neural net to train on open data (DFL). Stretch goal.
+
 ### FIFA Football Language
 [In contest](https://www.fifatrainingcentre.com/en/resources-tools/football-language/in-contest/in-contest.php) ·
 [In possession](https://www.fifatrainingcentre.com/en/resources-tools/football-language/in-possession/index.php)
@@ -107,11 +114,19 @@ spellF1 metric and is our own design, not a published recipe.
 
 | Dataset | What | Labels useful to us | Notes |
 |---|---|---|---|
+| [DFL / Bassek et al. 2025](https://pmc.ncbi.nlm.nih.gov/articles/PMC11787359/) | 7 Bundesliga matches, 25 fps tracking + official events, via `floodlight` | **per-frame `BallStatus` (alive/dead) and `BallPossession` (home/away)**: almost our H/A/D | CC-BY 4.0. Clean tracking: we must add our tracker's faults |
 | [Metrica sample data](https://github.com/metrica-sports/sample-data) | 3 anonymised games, tracking + synchronised events; Game 3 in the same EPTS format as ours | events (passes, set pieces…) → possession and stoppages | Same provider family as our data. No formal licence; credit requested |
 | [SkillCorner open data](https://github.com/SkillCorner/opendata) | 10 A-League 2024/25 matches, broadcast tracking at 10 fps | **per-frame possession** (player and home/away); phases only while the ball is in play | MIT licence. Different frame rate and provider |
 | [PFF FC World Cup 2022](https://www.blog.fc.pff.com/blog/enhanced-2022-world-cup-dataset) | 64 matches, broadcast tracking + events | events | Access by form; terms not yet checked |
 
-Uses: train or validate a learned model; run the damage test on far more than 17 possessions.
+Decision 2026-10-25: use **DFL first, Metrica Game 3 second**, skip SkillCorner for now (10 fps, no
+dead-ball labels). The organisers confirmed (issues #8, #10) that labels and parameter choices on
+other matches are allowed, and that choosing parameters against hand labels of BAR-ATH is not.
+
+Uses: set every threshold; run the damage test on ~10 matches instead of 5 minutes; train a
+learned model later. Their tracking is cleaner than ours, so we add our tracker's faults on
+purpose (drop the ball when it is dead and in short occlusions, swap a keeper's team), with the
+amounts taken from whole-match counts of our data (§7), never from the public 5 minutes.
 Caveat: each provider defines possession slightly differently, so treat scores there as a
 robustness check, not a copy of our metric.
 
@@ -162,9 +177,12 @@ What whistles tell us: fouls, offsides, goals, the ends of halves — the **star
 stoppages. Throw-ins, goal kicks and corners are usually not whistled, so audio complements the
 tracking rather than replacing it.
 
-**Commentary** needs the broadcast video again (14 GB), an alignment to the tactical timeline
-(none is provided; crowd-noise cross-correlation between the two audio tracks is a plausible way),
-and transcription. Commentators also speak late. High effort, moderate value: parked.
+**Commentary** (English, confirmed 2026-10-25): the broadcast audio is extracted and the
+broadcast timeline is aligned to tactical (§7), so what remains is transcription (local Whisper)
+and turning lines into timed events (a small local LLM). Commentators speak late: hints, not labels.
+
+Audio cross-correlation between the two soundtracks turned out weak (correlation ~0.1; the
+broadcast mix is mostly commentary), so the alignment comes from the tracking instead.
 
 ---
 
@@ -184,7 +202,62 @@ and transcription. Commentators also speak late. High effort, moderate value: pa
 
 ---
 
-## 7. What to build, ranked by value for effort
+## 7. Data audit, 2026-10-25
+
+Scripts: `scripts/audit_tracking.py [--source broadcast]`, `scripts/audit_tagging.py`,
+`scripts/align_broadcast.py`. All print whole-match counts only.
+
+### Tracking (tactical, graded halves)
+
+| Finding | Number | What it means for us |
+|---|---|---|
+| **The tracker fills in ball gaps under ~5 s itself** | gaps: 17 under 1 s, **1** of 1–5 s, 132 of 5 s or more (broadcast: 119 of 1–5 s) | Visible ball positions during short occlusions are the tracker's guesses. Every gap that survives is ≥ 5 s, and 132 is close to a match's number of restarts: gaps are mostly stoppages |
+| Ball speed column is unusable | corr 0.06 with the ball's real movement | Use speed from positions: p50 5.1, p90 14.3, p99 24.4 m/s (plausible football) |
+| Player speed column is right but late | median ratio 0.99 to speed from positions; best match 7 frames (0.28 s) late | Fine for "is the team slow?", too late for timing a kick |
+| Filled-in player paths | 6.0% of moving player-seconds are perfectly straight (broadcast 1.9%) | Positions in occlusions are invented; nearest-player there is a guess |
+| **Keeper mix-up is larger than first measured** | deepest object in Barça's box labelled Athletic with the ball > 40 m away: 515 frames (1st half), **2,866** (2nd half); Athletic's box: 61 / 214 | A Barça-goal problem, mostly in the 2nd half; Athletic's numbers look like real attackers |
+| Non-players labelled as players | 33 tracks of 10 s or more living on a touchline (~8 object-minutes); 4 off the pitch | Assistant referees, substitutes: can win nearest-player votes near the touchline |
+| Extra objects | home > 11 on 8.1% of frames, away > 11 on 4.7% | Cap 11 per team |
+| Identity jumps | home 31 one-frame jumps > 3 m, away 0 | Rare; not a priority |
+| Ball oddities | 119 one-frame moves > 2 m; 2.1% of visible frames > 2 m off the pitch; 0.6% > 20 m from every object | Small; filter impossible jumps |
+| Camera coverage | object count 19–21 wherever play is | The tactical camera sees the whole pitch |
+| Ends | teams swap ends at halftime in the coordinates | Normal; work out each team's goal per half |
+
+### Smart Tagging, checked against the tracking (not against any answers)
+
+- **Team tags are good in open play, weak near the box.** Tagged team in clear control
+  (ball ≤ 1.5 m from one player, no opponent within 3 m): Build Up 89%, Progression 87%,
+  Transitions 74%, Ball in Final Third 70%, Ball in the Box 62%, Creating Chances 60%, Players in
+  the Box 58%. Defending phases mirror these (phases come in pairs, one per team).
+- **Set-piece tags are fixed windows**: every one is exactly 35 s (kickoffs 5 s). Starts sit
+  ~4–6 s before the ball reappears for throw-ins and corners, ~0 s for goal kicks. Use them as
+  "a restart around here", never as exact times.
+- **Types are mostly right where checkable**: the ball reappears at a touchline for 65% of
+  throw-ins, at the centre spot for 3 of 4 after-goal kickoffs. Corners: the ball is usually
+  picked up after the delivery, so only 4/12 reappear at the corner flag.
+- **Most long gaps have no set-piece tag**: 42 of 132. Where the ball reappears in the other 90:
+  open field 40 (free kicks?), penalty box 21 (a keeper holding the ball, which is live play?),
+  touchline 17 (throw-ins), goal area 10 (goal kicks). Smart Tagging lists 5 free kicks; a match
+  has ~25 fouls. **It cannot be our main dead-ball source.**
+- Goal tags: inconclusive with this check; needs a better one.
+
+### Broadcast ↔ tactical alignment
+
+| | Offset (tactical = broadcast + offset) | Confirmed by |
+|---|---|---|
+| 1st half | **+4,012 … +4,015** (drifts 3 frames: the broadcast drops the odd frame) | ball and players agree within 1 frame in every window but one |
+| halftime splice | broadcast ~84,700 → ~87,100: mostly no live pictures | — |
+| 2nd half | **+26,919 … +26,920** | same |
+
+- At the right offset the two trackers' ball positions agree to a median of 0.6–1.0 m; players
+  0.3–1.0 m.
+- Broadcast frames: 48% live play (mapped), 14% replays and other inserts (players in view but
+  matching nothing), 38% close-ups, crowd or studio. Replays follow stoppages: a clue.
+- The broadcast video has 164,487 frames against 164,488 tracking records. The file is complete
+  (every frame present, end decodes cleanly), so this is in the original.
+- Output: `data/derived/broadcast_offsets.npz` (offset per broadcast frame, -1 where not live).
+
+## 8. What to build, ranked by value for effort
 
 | # | Idea | From | Effort | Why |
 |---|---|---|---|---|
