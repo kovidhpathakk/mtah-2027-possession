@@ -3,7 +3,7 @@
 The open-data matches (possession/external.py) have clean tracking: DFL never loses the ball, no
 team ever has 12 objects, nobody stands motionless in a goal. A method set up on clean data would
 meet our match unprepared. So before testing on them we add the faults the audits measured on our
-match (docs/research.md section 7), at the rates measured there. Every rate comes from whole-match
+match (docs/data.md, Data audit), at the rates measured there. Every rate comes from whole-match
 tracking counts of our match (our_profile, or the audits for the two constants) -- never from its
 ground truth, public or private.
 

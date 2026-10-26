@@ -14,6 +14,25 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Our tracker's ball is heavily smoothed; the fault kit now copies it
+
+In graded live play our ball's velocity changes by >= 7 m/s within 0.24 s on 1.9% of frames
+(clean DFL 9-13%, damaged practice 8-11%), by >= 3 m/s on 23%, 90th percentile 4.3 m/s. A
+23-frame moving average makes damaged practice balls match (2.3-2.4%, 21-25%, 4.3-4.4 m/s; 19 too
+rough, 27 too smooth). Consequence: the touch rule tuned at 7 m/s fires 4-5× less often on our
+match than on practice data. The kit now smooths; practice recalibration and a touch-rule re-tune
+are running. (A first measurement over all 199,319 frames gave 8.7%: warm-up and half-time, when
+balls are knocked about, inflated it; graded frames only from now on.)
+
+### 2026-10-26 · Smart Tagging as a team clue where v4 is stale: no gain
+
+Imitation tags on the damaged practice matches (coverage 81%, phases 12-30 s, accuracy by zone
+estimated from v4's agreement with the real tags): deferring to a tag after 8 s without a control
+event 0.409 (v4 0.409); after 4 s 0.400-0.407; after 2 s 0.347-0.386. Tags span several
+possessions, so where they overrule v4 they also overwrite the other team's short possessions.
+Not adopted; to re-test once the touch rule is re-tuned on the smoothed kit.
+
+
 ### 2026-10-26 · Vision pilot 2 could not run: the laptop's 8 GB is the limit
 
 Qwen3-VL 4B (3.3 GB on disk, 4.1 GB loaded) fitted only 71% on the GPU with the usual apps open;
@@ -214,7 +233,7 @@ or ends at an edge is 79–100% dead.
 
 ### 2026-10-25 · Data audit: tracking, Smart Tagging, broadcast alignment
 
-Full numbers in docs/research.md §7. The ones that change what we build:
+Full numbers in docs/data.md (Data audit). The ones that change what we build:
 
 - The tactical tracker fills in ball gaps under ~5 s itself (only 1 gap of 1–5 s, against 119 on
   the broadcast tracker). Every surviving gap is ≥ 5 s, and there are 132 of them: roughly a
@@ -279,7 +298,7 @@ Checked against data we are allowed to measure:
 | Gaps ending within 5 s of a tagged set piece: > 20 s vs shorter | 25% vs 5–9% |
 | Public truth inside the 4 gaps of 5–15 s | 2 fully live (A), 1 mostly D, 1 fully D |
 
-**Update after web research (docs/football-notes.md):** ball-in-play in LaLiga is ~54–56 min, so
+**Update after web research (docs/sources.md, published football facts):** ball-in-play in LaLiga is ~54–56 min, so
 dead ball is probably ~40–45% of graded frames, not ~20%. The baselines' and v1's 32–34% D is
 likely too LOW. Restarts take ~12–27 s on average, so many medium blackouts are probably
 restarts; v1's "medium blackout is dead only if players are slow" is likely too strict.

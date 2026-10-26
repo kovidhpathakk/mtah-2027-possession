@@ -1,4 +1,4 @@
-# Backlog: every idea, nothing dropped silently
+# Plan: what's next, every idea with its status
 
 One row per idea we have had. **Check this before choosing the next step.** New ideas are added
 the moment they come up. Rows are never deleted: an idea we decide against is marked `dropped`
@@ -36,7 +36,7 @@ freeze keeps a validated submission of the best model at all times.
 
 | Dive | Problem | Status |
 |---|---|---|
-| 1 | Team call with the ball travelling (passes, loose balls) | **in progress**: `docs/deep-dives/01-ball-travelling.md` |
+| 1 | Team call with the ball travelling (passes, loose balls) | **in progress** (v4 adopted; Smart Tagging tried, no gain; touch rule being re-tuned for our smoothed ball): `docs/deep-dives/01-ball-travelling.md` |
 | 2 | The first seconds after a stoppage (who restarts) | next |
 | 3 | Ball missing in live play | planned |
 | 4 | Stoppage edges | planned |
@@ -75,6 +75,8 @@ long jobs in the background whenever the machine is free.
 | M7b | Possession logic, part 2: control by touch (ball velocity change near a player) or slow hold; no credit for a ball passing by | Link & Hoernig 2017, Vidal-Codina 2022 | **now (deep dive 1)** | damaged practice 0.353 → 0.409 (dv 7, pass-by 6); candidate v4 |
 | M7c | Duel rule: keep the ball with its holder until he is clearly away (`keep_through_duels`) | deep dive 1 real cases | dropped | worse at every setting (0.394 at 1.5 m, 0.373 at 2 m): it also blocks real tackles |
 | M7d | Pressing errors: understand from a larger case review, then retry | deep dive 1 | planned | |
+| M7e | **Touch rule re-tuned on the smoothed practice ball** (our tracker smooths the ball over ~0.9 s, so kicks look gradual) | data check 2026-10-26 | **now** | practice recalibration + sweep running |
+| M8b | Smart Tagging team tags where v4 is stale | deep dive 1 | done: no gain | 0.409 vs 0.409; tags overwrite short possessions; re-test after M7e |
 | M8 | Precise Smart Tagging: exact restart frame inside each 35 s window, taker's team, trust per tag type | Smart Tagging audit | next 2 | |
 | M9 | Imitation clues on the practice matches (fake Smart Tagging and commentary from their event lists, with our sources' measured flaws) | our design | next 3 | so commentary and tagging can be tested fairly |
 | M10 | Who restarts: the taker's team gets the ball from the restart frame | Vidal-Codina | next 4 | |
@@ -125,6 +127,7 @@ long jobs in the background whenever the machine is free.
 | # | Idea | Status | Notes |
 |---|---|---|---|
 | P1 | Practice-match test bench (open data, fault kit, calibration) | done | `scripts/open_test.py` |
+| P1c | Fault kit: smooth the practice ball like our tracker's (23-frame moving average) | done | practice balls now match ours on 3 measures |
 | P1b | Fault kit, missing faults: wrong team labels (1.8% of objects, 4× likelier in the boxes) and large ball errors (5-15 m on ~3.5% of frames) | done | practice baseline 0.248 vs real 0.243; v3 0.352 vs v2 0.284 |
 | P2 | Organiser questions: issue #14 (saving model outputs; clips → rules), #11 | open | check each session; upstream RULES now allow people to watch the video |
 | P3 | Merge the organisers' latest docs (23 Oct) into our branch | planned | offered, not done |
@@ -132,3 +135,23 @@ long jobs in the background whenever the machine is free.
 | P5 | Remove experimental method variants not used in the final model | planned | before the final submission |
 | P6 | Technical document | planned | |
 | P7 | Final submission, validated and reproduced byte for byte | planned | by ~15 Nov (deadline 17 Nov) |
+
+## Decisions (Kovidh, 2026-10-25)
+
+1. Open data: DFL (7 matches, per-frame alive/possession) first, Metrica Game 3 second; damaged
+   to look like our tracker; used to set thresholds, as a bigger damage test, and for training.
+2. Audit the data before building v2 (done for tracking, tagging, broadcast).
+3. v2 = clean-up + restart detector + possession logic, thresholds from open data; then decoder.
+4. Broadcast re-downloaded; keep audio + tracking.
+5. Models: Whisper + whistle classifier first, then a vision-model timing pilot; Ball Radar later.
+6. Questions to organisers: posted as
+   [issue #14](https://github.com/metrica-sports/more-than-a-hack-2027/issues/14).
+
+## Open questions
+
+- **Organisers:** issue #14 (saving model outputs for reproducibility; turning what we saw in
+  clips into general rules), and #11 (another team's: is byte-identical required across
+  hardware?). Check both at the start of each session.
+- How `main` is used and who merges.
+- Is a ball gap ending in the penalty box a keeper holding the ball (live) or a goal kick (dead)?
+  Needs the restart detector and DFL to answer.

@@ -4,10 +4,7 @@ The story of our entry, stage by stage: why we did each thing, what we did, how 
 scored and what it taught us. **Updated after every step.** The organisers' baselines appear only
 as a yardstick.
 
-- `docs/status.md`: a one-page "start here" summary.
-- `docs/experiments.md`: one entry per experiment, with full numbers.
-- `docs/research.md`: papers, datasets, models and the data audit in detail.
-- `docs/backlog.md`: **every idea with its status**, so nothing is dropped silently.
+- `docs/README.md`: which file answers which question.
 
 Last updated: 2026-10-25.
 
@@ -19,8 +16,9 @@ Last updated: 2026-10-25.
 |---|---|
 | **Best model** | **v4**: practice 0.41, quiz 0.431 (v3: 0.35, 0.357; v2: 0.28, 0.371; v1: 0.27, 0.362; baseline: 0.25, 0.326). Practice scores here use the harder fault kit |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
-| **Working on** | commentary (transcribing locally), then precise Smart Tagging, who restarts, the decoder |
+| **Working on** | Deep dive 1: re-tuning the touch rule for our tracker's smoothed ball |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
+| **Docs** | `docs/README.md` maps every file |
 | **Deadline** | 17 November 2026 |
 
 ## How to read the scores
@@ -135,7 +133,7 @@ dead ball. That splits real possessions wherever the ball is merely hidden.
 
 **Why.** Find what others have already solved, and what extra data and tools the rules allow.
 
-**What we found** (details in `research.md`):
+**What we found** (details in `docs/sources.md`):
 
 | Source | What it gives us | Used so far | Where it goes |
 |---|---|---|---|
@@ -146,7 +144,7 @@ dead ball. That splits real possessions wherever the ball is merely hidden.
 | **Metrica sample Game 3** | Same format as ours, answers from events | the open-data test | everything from now on |
 | Local models (Whisper, audio classifier, detector, vision models) | Clues from audio and video, run on the laptop | detector in the video audit | whistles, commentary |
 
-We also asked the organisers two questions (issue #14) and recorded decisions in `status.md`.
+We also asked the organisers two questions (issue #14) and recorded decisions in `docs/plan.md`.
 
 ### Stage 4 · Audit the data (Oct 25)
 
@@ -282,23 +280,11 @@ with swap).
    passing by never counts. A firmer duel rule was tried and dropped (it blocks real tackles).
 5. **v4: practice 0.352 → 0.410, better in all 48 runs; quiz 0.431; possessions per minute on our
    match now match the truth's (3.45 vs 3.40).**
+6. Smart Tagging's team tags tried where v4 is stale: no gain (tags overwrite short possessions).
+7. **Our tracker's ball turned out heavily smoothed** (sharp velocity changes 1.9% of live frames
+   vs 9-13% in DFL), so the touch rule fires far less on our match than in practice. The practice
+   damage now smooths the ball the same way; the touch rule is being re-tuned.
 
-## Next steps, in order
+## Next steps
 
-| # | Step | Why | Done when |
-|---|---|---|---|
-| 1 | Finish the commentary transcript; extract events with keyword rules and squad names, then a local LLM | Fouls, free kicks, offsides and who gets them: what Smart Tagging misses | event counts look like a football match |
-| 2 | Precise Smart Tagging | Exact restart times and teams | set pieces line up with ball returns |
-| 3 | Imitation clues on the practice matches | So every source can be tested | clues exist for all 8 matches |
-| 4 | Who restarts | Right team in the first seconds after a stoppage | beats v2 on practice |
-| 5 | **Decoder** combining every clue | The step where the sources pay off together | beats v2 on practice |
-| 6 | Whistle detector | Marks the start of fouls and offsides | helps, or dropped |
-| 7 | Local video model on uncertain moments | Catch what nothing else sees | helps, or dropped |
-| 8 | Freeze, reproducibility, technical document | Required deliverables | submit by ~15 Nov (deadline 17 Nov) |
-
-## Open questions
-
-- Organisers (#14, #11): may we save model outputs in the repo for exact reproducibility, and turn
-  what we saw in clips into general rules?
-- Why the tactical data has almost no 1–5 s ball gaps.
-- Which people the extra objects are (officials? substitutes?). Low impact.
+See `docs/plan.md` (order of work, deep dives, every idea with its status).

@@ -83,7 +83,7 @@ its kickoff (frame 113,742).
 ## What the model does *not* use yet
 
 Smart Tagging, the video, the audio (whistles), the commentary and the broadcast tracking. Each
-was audited; their use is planned inside the deep dives (`docs/backlog.md`, "Data use").
+was audited; their use is planned inside the deep dives (`docs/plan.md`, "Data use").
 
 ## How good it is
 

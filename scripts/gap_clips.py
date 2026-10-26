@@ -15,7 +15,7 @@ match clock, length) go to data/derived/clips/ -- local only: they are gitignore
 blocks video files, and they must never be shared publicly. An existing index.csv is never
 overwritten (it may hold your notes) unless you pass --index-only.
 
-HOW TO USE WHAT YOU SEE. Write general patterns in docs/football-notes.md ("long gaps where
+HOW TO USE WHAT YOU SEE. Write general patterns in docs/data.md (Football notes from watching) ("long gaps where
 players walk are stoppages"), and we turn patterns into rules. Never encode a specific gap of this
 match as a label -- that is hand labelling, which the rules forbid.
 

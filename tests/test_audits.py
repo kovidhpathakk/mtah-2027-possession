@@ -1,6 +1,6 @@
 """Do the audit and alignment scripts measure what they claim? Checked on made-up data.
 
-Every number in docs/research.md section 7 comes from these functions run on the match. Nobody can
+Every number in docs/data.md (Data audit) comes from these functions run on the match. Nobody can
 look at the match data to check them (CLAUDE.md), so each function is checked here instead on
 small synthetic inputs whose right answer is known by construction: a ball moving at a known
 speed, a path known to be straight, a broadcast track that is the tactical one shifted by a known

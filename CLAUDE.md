@@ -82,7 +82,7 @@ matches is allowed.
     python scripts/guard.py                     the data-leak check
 
 New methods go in possession/methods.py; run.py and both test scripts pick them up from there.
-Log every experiment in docs/experiments.md, and update docs/progress.md (timeline, model
-versions, next steps) after every step.
-Check docs/backlog.md before choosing the next step; add every new idea to it at once; never
-delete a row (mark it `dropped` with the reason).
+Docs map: docs/README.md. Log every experiment in docs/experiments.md; after every step update
+docs/progress.md (story, model versions) and docs/plan.md (next steps, every idea with its status);
+when the model changes, update docs/model.md. Check docs/plan.md before choosing the next step;
+add every new idea to it at once; never delete a row (mark it `dropped` with the reason).

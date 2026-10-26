@@ -124,7 +124,7 @@ on rerun. **v4 is the new best model and this week's frozen submission candidate
 Still to do in this dive: a larger case review of the remaining errors (including pressing), the
 Smart Tagging test, and overlay clips of our match for Kovidh.
 
-## Step 7: Smart Tagging where v4 is stale (in progress)
+## Step 7: Smart Tagging where v4 is stale: no gain
 
 **Why here.** v4's team errors grow with the time since it last saw a player gain control
 (damaged practice, live frames):
@@ -150,3 +150,24 @@ ones' shape (coverage, phase length, accuracy by zone, estimated from v4's agree
 v4's own error). Rule under test: where v4 has seen no control event for `stale` seconds and a tag
 of a trusted kind covers the frame, the tag's team is used. Sweep: stale 2/4/8 s × kinds open /
 open+final / all.
+
+**Result.**
+
+| Rule | practice |
+|---|---|
+| v4 | 0.409 |
+| tags (open play) after 8 s | 0.409 |
+| tags after 4 s | 0.400-0.407 |
+| tags after 2 s | 0.347-0.386 |
+
+No gain: a phase tag names one team for 12-30 s, so where it overrules v4 it also overwrites the
+other team's short possessions inside the phase. Not adopted; re-test after step 8.
+
+## Step 8: our tracker's ball is smoothed (in progress)
+
+Checking whether practice balls move like ours showed they do not: our ball's velocity changes by
+>= 7 m/s within 0.24 s on 1.9% of graded live frames against 9-13% in clean DFL. Our tracker
+smooths the ball over roughly 0.9 s, so kicks look gradual and the touch rule tuned at 7 m/s
+fires 4-5× less often on our match. The fault kit now applies a 23-frame moving average (matching
+our ball on three measures). Running: the practice test recalibrated against the published
+baselines, and the touch rule re-tuned (dv 2-7 m/s, span 3/6/10 frames, pass-by 6/8).

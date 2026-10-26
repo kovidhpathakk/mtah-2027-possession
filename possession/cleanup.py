@@ -1,6 +1,6 @@
 """Remove the tracking objects the audits showed are not players, before any method looks at them.
 
-Two faults found in our match and absent from clean data (docs/research.md section 7):
+Two faults found in our match and absent from clean data (docs/data.md):
 
   frozen objects  an object whose position does not change AT ALL for FROZEN frames or more. Our
                   tracker reports positions to ~1 mm, and a person standing still still sways by

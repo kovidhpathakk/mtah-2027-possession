@@ -1,6 +1,6 @@
 """Make the tracking as precise as the data allows, before any method reads it.
 
-What the audits (docs/research.md section 7) showed can be repaired by code, in this order:
+What the audits (docs/data.md) showed can be repaired by code, in this order:
 
   1. objects    frozen leftover tracks and a team's 12th+ object go (possession.cleanup)
   2. blips      a visible ball that jumps more than JUMP m from where it was and comes back within
