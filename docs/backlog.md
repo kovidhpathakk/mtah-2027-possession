@@ -48,6 +48,9 @@ Last updated: 2026-10-26.
 | V3 | Local vision-language model: "is play stopped?" on chosen frames | parked | Kovidh: wait; revisit after the decoder |
 | V4 | SoccerNet-style whole-video models | dropped | too heavy for the laptop; trained on TV close-ups |
 | V5 | Clips with the tracking drawn on top, for Kovidh to watch and describe in general terms | planned | when a weakness needs understanding |
+| V6 | **Video for the team call**: in live-play gaps, the detector finds the ball and the player nearest it | planned (after M7) | targets the biggest lever; Kovidh's idea |
+| V7 | Video sees the ball **in the air**, so a nearby opponent doesn't have it | planned (after M7) | tracking is flat; a vision model can tell |
+| V8 | Shirt colours check players' team labels (~5% wrong in the boxes) | planned (after M7) | |
 
 ## Process and deliverables
 
