@@ -7,6 +7,7 @@ as a yardstick.
 - `docs/status.md`: a one-page "start here" summary.
 - `docs/experiments.md`: one entry per experiment, with full numbers.
 - `docs/research.md`: papers, datasets, models and the data audit in detail.
+- `docs/backlog.md`: **every idea with its status**, so nothing is dropped silently.
 
 Last updated: 2026-10-25.
 
