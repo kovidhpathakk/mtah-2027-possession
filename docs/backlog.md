@@ -106,8 +106,8 @@ long jobs in the background whenever the machine is free.
 |---|---|---|---|
 | V1 | Detector audit of the tracking (420 frames) | done | ghost not a person; ball visible in ~2/3 of gap frames |
 | V2 | **Detector finds the ball inside tracking gaps** | next (background, after S3) | where the ball is during gaps: restart spot? moving? |
-| V3 | Local vision-language model: "is play stopped?" on chosen frames | done (pilot) | **failed**: qwen2.5vl:3b says "stopped" on 100% of frames in every group; 26 s per frame. The wide view is illegible to it |
-| V12 | **Vision pilot 2**: crops around the action (tracking + homography), 2-3 frames a second apart, Qwen3-VL 4B | blocked by memory | 4.1 GB model on an 8 GB laptop with apps open: heavy swapping, no answer in 10 min. Retry with every other app closed, or with Qwen3-VL 2B |
+| V3 | Local vision-language model: "is play stopped?" on chosen frames | done (pilot); model removed to free disk | **failed**: qwen2.5vl:3b says "stopped" on 100% of frames in every group; 26 s per frame. The wide view is illegible to it |
+| V12 | Vision pilot 2: crops around the action (tracking + homography), 2-3 frames a second apart, Qwen3-VL 4B | parked until deep dives 3-4 | blocked twice: first by memory (4.1 GB model with apps open), then the disk filled with swap (324 MB free) and macOS ran out of memory. Run it alone, overnight, apps closed |
 | V13 | Qwen3-VL 2B pilot with crops and sequences | planned | fits in memory; weaker |
 | V9 | **Best vision models that fit the laptop**: Qwen3-VL 4B (8B needs ~12 GB); football-trained detectors (YOLOv11 "soccana": players/ball/referees; RF-DETR ball) | planned (after the pilot) | check licences and that none was trained on our match |
 | V10 | **Re-download the broadcast video** and run vision models on its close-ups (mapped to tactical time by the alignment) | planned, Kovidh to download | players and ball are far larger than in the wide tactical view |

@@ -52,6 +52,16 @@ matches is allowed.
   reproducible from a clean clone, byte for byte: pinned dependencies, fixed seeds.
 - Match the style of the organisers' code: numpy/pandas, docstrings that explain why.
 
+## Machine limits (8 GB Apple M1, disk nearly full)
+
+- One heavy job at a time: never run a local vision model or LLM alongside another heavy job.
+  On 2026-10-26 a vision model plus analysis filled the disk with 5.6 GB of swap and macOS ran
+  out of memory.
+- Keep at least 5 GB of disk free: check `df -h ~` before any download; remove models proven
+  useless.
+- Stop the Ollama server (`pkill -x ollama`) after each use; ask Kovidh to quit Chrome and other
+  heavy apps before a vision-model run.
+
 ## Commands
 
     python scripts/check_data.py --baseline     verify a data copy
