@@ -14,6 +14,25 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Track T pilot 2: the same ball detector on the broadcast video
+
+`scripts/ball_pilot_broadcast.py`, broadcast frames showing live play, mapped to tactical frames
+(alignment) and to the pitch (broadcast homography), 1.7 s per frame:
+
+| Test | Broadcast | Tactical (pilot 1) |
+|---|---|---|
+| A. a detection within 2 m of the provided ball / most confident detection is it | 51% / **51%** | 50% / 32% |
+| B. tactical live gaps shown live on the broadcast | 4,084 frames (~half of the 8,011) | – |
+| B. a ball detected there / with confidence ≥ 0.5 | **80% / 57%** (median 13.6 m from last seen) | 72% / 31% |
+| C. sharp velocity changes (≥ 7 m/s in 0.24 s), detected vs provided ball, around control moments | **9% vs 4%**; p90 6.4 vs 3.9 m/s | 7% vs 11% |
+
+The broadcast's larger ball makes the detector's best guess right more often and finds a ball in
+most tactical gaps, and the detected ball is sharper than the provided one around control moments
+(weak support for A3: detector jitter also adds sharpness). But within 2 m it still matches the
+provided ball only half the time (the broadcast homography is less exact for a zoomed, moving
+camera). Not yet reliable enough for our own track; WASB (plan T9) is the next candidate.
+
+
 ### 2026-10-26 · Track T pilot: an off-the-shelf ball detector cannot rebuild the ball track
 
 Roboflow "sports" ball detector (YOLOv8x, trained on DFL Bundesliga Data Shootout footage; approved
