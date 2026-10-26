@@ -14,6 +14,29 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Track T pilot 3: WASB ball tracker on the tactical video
+
+`scripts/wasb_pilot.py`: WASB (BMVC 2023) soccer weights (trained on ISSIA-CNR fixed wide cameras),
+three frames at a time, ~1.1 s per three-frame step on the CPU.
+
+| Setting | A: ball within 2 m of the provided one | B: ball found in live gaps |
+|---|---|---|
+| whole frame (512×288) | 0% | 1% |
+| 960×540 window, threshold 0.5 | 28% | 9% |
+| 640×360 window, threshold 0.5 / 0.3 / 0.15 (40 frames) | 40% / 50% / **60%** | – |
+| 1280×720 window, threshold 0.15 | 20% | – |
+| (Roboflow YOLOv8, whole frame / 480×270 window) | 50% / 55% | 72% (mostly doubtful) |
+
+Zooming in and lowering the threshold help; the best setting finds the ball within 2 m about 60% of
+the time (lower thresholds also add false detections, not counted here). Smoothing check (crop,
+threshold 0.5): ball detected on only 26% of consecutive frames; inconclusive.
+
+**Track T verdict so far:** off-the-shelf ball models reach 50-60% on our wide camera; a ball track
+of our own needs ~90%. Parked as a main route. Still open: fusion of all ball sources where a
+detector is confident (T12), fine-tuning on public wide-camera data (T14), self-training with
+algorithm-made labels on our video (T15, organisers' answer needed).
+
+
 ### 2026-10-26 · Track T pilot 2: the same ball detector on the broadcast video
 
 `scripts/ball_pilot_broadcast.py`, broadcast frames showing live play, mapped to tactical frames

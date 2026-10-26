@@ -52,6 +52,24 @@ MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
+class Config(dict):
+    """The repository reads its config both as cfg['key'] and cfg.KEY (Hydra); this does both."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as error:
+            raise AttributeError(name) from error
+
+    @classmethod
+    def wrap(cls, value):
+        if isinstance(value, dict):
+            return cls({k: cls.wrap(v) for k, v in value.items()})
+        if isinstance(value, list):
+            return [cls.wrap(v) for v in value]
+        return value
+
+
 def load_model():
     digest = hashlib.sha256(open(WEIGHTS, "rb").read()).hexdigest()
     if digest != WEIGHTS_SHA256:
@@ -59,7 +77,7 @@ def load_model():
     spec = importlib.util.spec_from_file_location("wasb_hrnet", os.path.join(REPO, "models", "hrnet.py"))
     hrnet = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(hrnet)
-    cfg = yaml.safe_load(open(os.path.join(REPO, "configs", "model", "wasb.yaml")))
+    cfg = Config.wrap(yaml.safe_load(open(os.path.join(REPO, "configs", "model", "wasb.yaml"))))
     model = hrnet.HRNet(cfg)
     state = torch.load(WEIGHTS, map_location="cpu", weights_only=True)["model_state_dict"]
     state = {k.replace("module.", "", 1): v for k, v in state.items()}
