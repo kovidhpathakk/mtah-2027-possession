@@ -10,6 +10,7 @@ from possession import baseline, blackout, cleanup, stoppages
 
 METHODS = {
     "v2": lambda tracking, frames=None: stoppages.predict(tracking, frames),
+    "v2_precise": lambda tracking, frames=None: stoppages.predict(tracking, frames, precise=True),
     "v2_gaps_only": lambda tracking, frames=None: stoppages.predict(
         tracking, frames, rules=("gaps",)),
     "v2_no_still": lambda tracking, frames=None: stoppages.predict(

@@ -18,7 +18,7 @@ Last updated: 2026-10-25.
 |---|---|
 | **Best model** | **v2**: practice matches 0.31, quiz 0.371 (v1: 0.29, 0.362; baseline: 0.26, 0.326) |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
-| **Working on** | v2.1: who restarts, possession logic |
+| **Working on** | commentary (transcribing locally), then precise Smart Tagging, who restarts, the decoder |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Deadline** | 17 November 2026 |
 
@@ -62,6 +62,7 @@ Code names in brackets are what the scripts call each model.
 | insurance (`insurance_baseline`) | 0.26 | as baseline | 0.326 | – | 32% | ready to upload |
 | v1 (`blackout_v1`) | 0.29 | 0.35 / 0.27 / 0.23 | 0.362 | – | 32% | superseded |
 | v1 + clean-up (`blackout_v1_clean`) | 0.28 | 0.35 / 0.27 / 0.23 | – | – | – | no gain |
+| v2 + precise tracking (`v2_precise`) | 0.31 | as v2 | 0.370 | – | 39% | neutral; kept as an option |
 | **v2** (`v2`) | **0.31** | **0.39 / 0.30 / 0.25** | **0.371** | – | **40%** | **current best** |
 
 ---
@@ -220,17 +221,48 @@ our tracker usually drops it, so on our match it helps less.
 
 ---
 
+### Stage 7 · Use every source, precisely (from Oct 26)
+
+**Why.** Each source we have (tracking, broadcast, Smart Tagging, commentary, audio, video) knows
+something the others don't. The goal is to make each one as exact as possible, then let one model
+weigh them all.
+
+**The key idea: imitation clues for testing.** Commentary, Smart Tagging, whistles and the
+broadcast exist only for our match, so the practice matches cannot show whether they help. But
+the practice matches come with official event lists (throw-ins, fouls, free kicks, goals). From
+those we make *imitation* commentary and Smart Tagging, with the real ones' flaws measured on our
+match (late, incomplete, 35 s windows). Then the practice exams can test whether the model uses
+each source well.
+
+**Who sees what.** Kovidh may watch the video to understand it (RULES.md). Claude may not
+(FAQ.md: no videos or extracts to a hosted LLM), so Claude works through local tools that print
+counts: the detector, Whisper, a local LLM, and clips that Kovidh watches and describes in general
+terms.
+
+| Step | Status | Result |
+|---|---|---|
+| **Precise tracking** (`possession/precise.py`): clean-up, ball blips, Savitzky-Golay smoothing (Vidal-Codina), broadcast ball where tactical has none | ✅ done | ball known on 61.8% of graded frames (was 59.3%); score neutral on practice and on our match: **the tracking is about as precise as it gets; the gains are in interpreting it** |
+| **Commentary transcription** (`scripts/transcribe.py`): Whisper large-v3-turbo via whisper.cpp, run locally, pinned model, repeatable output | ✅ pilot (3.6× real time, identical on rerun); full run in progress | – |
+| Precise Smart Tagging: snap each set-piece window to the actual restart, add the taker's team, trust per tag type | next | – |
+| Commentary → events: rules first (keywords, squad names), a local LLM second | after transcription | – |
+| Imitation clues on the practice matches, from their event lists | planned | – |
+| Who restarts | planned | – |
+| **Decoder**: one model weighing all clues, each source's trust learned on the practice matches | planned | – |
+| Whistle detector | planned | – |
+| Local video model on the moments the decoder is unsure about, overnight | planned | – |
+
 ## Next steps, in order
 
 | # | Step | Why | Done when |
 |---|---|---|---|
-| 1 | **Who restarts**: give the restart to the team of the player who takes it (thrower, kicker) | After a stoppage the vote can pick the wrong team for the first seconds | beats v2 on practice |
-| 2 | **Possession logic** (Link & Hoernig): change team only on real control; duels don't flip | Fewer false team changes in live play | beats v2 on practice |
-| 3 | **Decoder** (HMM/Viterbi): the most believable H/A/D sequence for the whole match | Targets spellF1 directly | beats v2 |
-| 4 | **Whistle detector** on the audio | Marks stoppages the tracking misses | helps, or dropped |
-| 5 | **Commentary**: Whisper + a small local LLM → timed hints | Fouls, free kicks and who gets them | helps, or dropped |
-| 6 | Optional: vision model "is play stopped?", Ball Radar | Catch what nothing else sees | if time allows |
-| 7 | **Technical document** + final submission | Required deliverables | by 17 November |
+| 1 | Finish the commentary transcript; extract events with keyword rules and squad names, then a local LLM | Fouls, free kicks, offsides and who gets them: what Smart Tagging misses | event counts look like a football match |
+| 2 | Precise Smart Tagging | Exact restart times and teams | set pieces line up with ball returns |
+| 3 | Imitation clues on the practice matches | So every source can be tested | clues exist for all 8 matches |
+| 4 | Who restarts | Right team in the first seconds after a stoppage | beats v2 on practice |
+| 5 | **Decoder** combining every clue | The step where the sources pay off together | beats v2 on practice |
+| 6 | Whistle detector | Marks the start of fouls and offsides | helps, or dropped |
+| 7 | Local video model on uncertain moments | Catch what nothing else sees | helps, or dropped |
+| 8 | Freeze, reproducibility, technical document | Required deliverables | submit by ~15 Nov (deadline 17 Nov) |
 
 ## Open questions
 

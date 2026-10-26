@@ -32,7 +32,7 @@ The tracking is cleaned first (possession.cleanup).
 
 import numpy as np
 
-from possession import baseline, cleanup
+from possession import baseline, cleanup, precise as precise_module
 from possession.blackout import missing_runs, vote_with_hold, windowed_mean
 from possession.tracking import PITCH
 
@@ -141,9 +141,12 @@ def vote_within_live(codes, dead, window):
     return team
 
 
-def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False):
-    """H/A/D per frame. rules / clean / live_vote switch parts off, to measure what each adds."""
-    if clean:
+def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False, precise=False):
+    """H/A/D per frame. rules / clean / live_vote / precise switch parts on and off, to measure
+    what each adds. precise=True runs possession.precise (which includes the clean-up)."""
+    if precise:
+        tracking = precise_module.precise(tracking)
+    elif clean:
         tracking = cleanup.clean(tracking)
     codes = baseline.nearest_team(tracking["players"], tracking["ball"], tracking["team"], frames)
     dead = tidy(dead_mask(tracking, rules))

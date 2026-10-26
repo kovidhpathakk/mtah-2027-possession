@@ -63,3 +63,6 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# -- local models (Whisper, LLMs): downloaded by scripts, never committed --------------------------
+models/
