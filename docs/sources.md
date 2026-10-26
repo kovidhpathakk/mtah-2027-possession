@@ -35,7 +35,7 @@ Both are fetched and checksum-verified by `scripts/fetch_open_data.py`.
 | PyTorch 2.5.1 + torchvision 0.20.1, Faster R-CNN ResNet-50 FPN v2 (COCO) | `requirements-video.txt` | video audit (people and ball) |
 | ffmpeg | Homebrew | frames, audio extraction |
 | Ultralytics 8.3.40 (AGPL-3.0) | `requirements-video.txt` | to run football-trained YOLO detectors (track T); weights not yet downloaded |
-| Roboflow "sports" football detectors (YOLOv8: ball, players) | [github.com/roboflow/sports](https://github.com/roboflow/sports) (MIT); trained on DFL Bundesliga Data Shootout footage | chosen for track T; download pending a decision (pickle weights from Google Drive) |
+| Roboflow "sports" football detectors: ball (YOLOv8x, 1 class, trained at 1280 px, 50 epochs) and players | [github.com/roboflow/sports](https://github.com/roboflow/sports) (MIT), weights from its `examples/soccer/setup.sh`; trained on DFL Bundesliga Data Shootout footage (not our match). SHA-256: ball `678fbad0…2912`, players `75b09c37…faf`. Downloaded with Kovidh's approval (2026-10-26); pickles scanned before loading: only torch, ultralytics, collections and `set` referenced | track T pilot (`scripts/ball_pilot.py`): ~1.4 s per frame on the CPU (the Apple GPU path hangs) |
 
 None of these is part of the submission pipeline yet (`run.py` needs numpy and pandas only).
 
