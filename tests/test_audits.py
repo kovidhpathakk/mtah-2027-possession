@@ -21,6 +21,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import align_broadcast  # noqa: E402
 from possession import damage as damage_kit  # noqa: E402
+from possession import squads  # noqa: E402
 import audit_tagging  # noqa: E402
 import audit_tracking  # noqa: E402
 
@@ -151,6 +152,18 @@ class Damage(unittest.TestCase):
             self.assertEqual(out["players"].shape[1], 25)
             self.assertEqual(len(out["team"]), 25)
             self.assertTrue(np.isnan(out["speed"][:damage_kit.SPEED_LAG]).all())
+
+
+class Squads(unittest.TestCase):
+    """Commentary lines are matched to teams by names that belong to one side only."""
+
+    def test_names_and_teams(self):
+        cases = {"Pedri finds Lamine Yamal": (2, 0), "free kick to Athletic": (0, 1),
+                 "Nico Williams goes past Koundé": (1, 1), "Iñigo with the ball": (0, 0),
+                 "Barça lead through Lewandowski": (2, 0), "Unai Simón saves": (0, 1)}
+        for text, (home, away) in cases.items():
+            counts = squads.teams_mentioned(text)
+            self.assertEqual((counts[0], counts[1]), (home, away), text)
 
 
 if __name__ == '__main__':
