@@ -48,7 +48,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 
 | Step | Experiment | Rows | Status |
 |---|---|---|---|
-| T0 | **Realism report**: our match vs damaged practice on every measure, flagging gaps | P1d | ⏳ running |
+| T0 | **Realism report**: our match vs damaged practice on every measure, flagging gaps | P1d | ✅ 17 of 18 measures within 1.5× after copying missing-player episodes |
 | T1 | **Football-trained detector pilot** (~200 frames): speed per frame, how often it finds the ball where the provided track has one, and where it has none | V9, T1 | next (runs alone) |
 | T2 | **Confirm the smoothing from the video**: detector on runs of consecutive frames around kicks; compare the real ball's speed changes with the recorded ones | V17 | with T1 |
 | T3 | If fast and accurate: **our own ball track** for every graded frame (detector + homography + a simple tracker joining detections), overnight | T3 | after T1 |
@@ -204,7 +204,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 |---|---|---|---|
 | P1 | Practice-match test bench (open data, fault kit, calibration) | done | `scripts/open_test.py` |
 | P1c | Fault kit: smooth the practice ball like our tracker's (23-frame moving average) | done | practice balls now match ours on 3 measures |
-| P1d | **Realism report**: our match vs the practice matches on every measure, flagging big differences; re-run whenever the kit changes | now | `scripts/realism_report.py`; added after the smoothing gap went unnoticed |
+| P1d | **Realism report**: our match vs the practice matches on every measure, flagging big differences; re-run whenever the kit changes | done | 17/18 within 1.5×; it caught the missing-player gap (9.4% vs 0.6%), now fixed |
 | P1b | Fault kit, missing faults: wrong team labels (1.8% of objects, 4× likelier in the boxes) and large ball errors (5-15 m on ~3.5% of frames) | done | practice baseline 0.248 vs real 0.243; v3 0.352 vs v2 0.284 |
 | P2 | Organiser questions: issue #14 (saving model outputs; clips → rules), #11 | open | check each session; upstream RULES now allow people to watch the video |
 | P3 | Merge the organisers' latest docs (23 Oct) into our branch | planned | offered, not done |

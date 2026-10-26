@@ -20,8 +20,11 @@ Faults:
                 errors are smooth, not independent per frame: our tracker's ball moves in steps of
                 a millimetre while sitting ~0.8 m from the broadcast tracker's. Independent
                 per-frame jitter would make a still ball look like it moves at ~4 m/s.
-  missing       players dropped for a few seconds at a time, on our share of frames with fewer
-                than 18 objects
+  missing       episodes where many people vanish at once, copied from ours: the same number per
+                graded hour, lengths drawn from our episodes (median 2 s, some over 30 s), the
+                number left tracked drawn from ours (median 14, sometimes 4), and 86% of
+                them during stoppages, as in our match (the realism report found the earlier
+                "drop 2-5 players at random" gave 0.6% of frames under 18 objects against our 9.4%)
   extra         a near-duplicate of a player, on our share of frames with 12+ in a team
   ghost         a motionless away-labelled object in front of the home goal, GHOST_FRAMES frames
   speed lag     the speed column delayed by SPEED_LAG frames
@@ -90,13 +93,21 @@ def _runs(mask):
 
 def our_profile():
     """The fault rates of our match, from its tracking alone."""
+    from possession.cleanup import clean
     t = load_source("tactical")
     graded = _graded(t["halves"], len(t["ball"]))
     missing = np.isnan(t["ball"][:, 0])
     gaps = np.array([b - a for a, b in _runs(missing & graded)])
     present = ~np.isnan(t["players"][:, :, 0])
     per_team = {code: present[:, t["team"] == code].sum(axis=1)[graded] for code in (HOME, AWAY)}
+    count = (~np.isnan(clean(t)["players"][:, :, 0])).sum(axis=1)
+    few = graded & (count < 18)
+    episodes = np.array([b - a for a, b in _runs(few)])
     return {
+        "few_episodes_per_frame": len(episodes) / graded.sum(),
+        "few_lengths": episodes,
+        "few_counts": count[few],
+        "few_in_stoppage": float(missing[few].mean()),
         "missing_share": float(missing[graded].mean()),
         "gap_lengths": gaps[gaps >= STOPPAGE_MIN],
         "few_players_share": float(((per_team[HOME] + per_team[AWAY]) < 18).mean()),
@@ -181,14 +192,20 @@ def damage(t, scenario, rng, profile):
         ball[a:b] += np.array([np.cos(angle), np.sin(angle)]) * size / pitch
     out["ball"] = _smooth_runs(ball, BALL_SMOOTH)
 
-    # Missing players: a few at a time, for a few seconds.
+    # Missing players: episodes like ours (see the docstring).
     players = t["players"].copy()
-    few = _cover(profile["few_players_share"] * graded.sum(), MISSING_RUN, graded, rng)
-    for a, b in _runs(few):
+    dead_frames = np.flatnonzero(graded & (labels == "D"))
+    live_frames = np.flatnonzero(graded & np.isin(labels, ("H", "A")))
+    for _ in range(int(round(profile["few_episodes_per_frame"] * graded.sum()))):
+        pool = dead_frames if rng.random() < profile["few_in_stoppage"] else live_frames
+        if not len(pool):
+            continue
+        a = int(rng.choice(pool))
+        b = min(n, a + int(rng.choice(profile["few_lengths"])))
         on = np.flatnonzero(~np.isnan(players[a, :, 0]))
-        if len(on):
-            drop = rng.choice(on, size=min(len(on), int(rng.integers(*MISSING_PLAYERS))),
-                              replace=False)
+        keep = int(rng.choice(profile["few_counts"]))
+        if len(on) > keep:
+            drop = rng.choice(on, size=len(on) - keep, replace=False)
             players[a:b, drop] = np.nan
 
     # Extra objects: one near-duplicate per team, and the ghost, as new slots.

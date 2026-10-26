@@ -14,6 +14,18 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Realism report: practice data now matches ours on 17 of 18 measures
+
+`scripts/realism_report.py` compares our match with the 8 practice matches (clean and damaged,
+mixed scenario) on 18 measures. First run flagged frames with fewer than 18 tracked people: ours
+9.4%, damaged practice 0.6%. In our match these are 56 episodes per match (median 2 s, some over
+30 s; median 14 people tracked, sometimes 4), 86% of them while the ball is missing (88% in v4's
+stoppages): celebrations, substitutions, players leaving the camera. The kit now copies these
+episodes; damaged practice gives 7.7%. Remaining flag: ball gaps of 1-5 s per hour (ours 0.6,
+practice 1.1; one gap in our whole match). Also visible: the ball is a little further from the
+nearest player in damaged practice (median 2.4 m vs 1.8 m; within 1 m 23% vs 29%).
+
+
 ### 2026-10-26 · Realistic (smoothed) practice ball: the touch rule's gain disappears
 
 Practice test with the fault kit's 23-frame ball smoothing (mean over 8 matches × 3 scenarios):

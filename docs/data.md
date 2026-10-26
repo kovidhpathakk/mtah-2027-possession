@@ -16,7 +16,7 @@ Confidence: **high** (several independent checks), **medium** (one kind of evide
 | A2 | Dead ball is ~40-50% of our match | LaLiga ball-in-play figures; DFL matches 41-52% | medium | – |
 | A3 | **The provided ball path is smoothed over ~0.9 s** | tracking numbers only (sharp velocity changes 1.9% vs 9-13% in DFL) | medium | **detector on runs of consecutive video frames: does the real ball stop sharply where the recorded one glides? (plan V17)** |
 | A4 | DFL's possession definition matches our ground truth's | both come from a tracking provider's fields (CHALLENGE.md); in DFL the new team is within 1 m at 84% of changes | medium-low | compare definitional patterns (where changes happen relative to players), without tuning anything |
-| A5 | The damaged practice matches look like our match | fault kit built from our measured rates; ball smoothing added 2026-10-26 | medium | **realism report** (`scripts/realism_report.py`): every measure side by side |
+| A5 | The damaged practice matches look like our match | realism report: 17 of 18 measures within 1.5× (2026-10-26) after adding ball smoothing and missing-player episodes | medium-high | re-run the realism report whenever the kit or the methods change |
 | A6 | A practice score predicts the real score | the published baseline: 0.238 practice vs 0.243 real; other baselines within 0.02-0.04 | medium-high | – |
 | A7 | Imitation Smart Tagging resembles the real tags | coverage and phase lengths measured; accuracy estimated from v4's agreement | low | – |
 | A8 | Commentary trails play by ~5 s | best agreement at 5 s, but agreement is near chance | low | event-focused pass (plan S3e) |
@@ -44,7 +44,7 @@ fault kit reproduces it so methods are tested against it), **open**.
 | **Frozen "ghost"** (Athletic keeper's track frozen ~10 min across half-time) | position unchanged to the mm; detector found no person there (6%) | **fixed**: objects frozen ≥ 10 s removed | `cleanup.drop_frozen` |
 | 12+ objects in a team (home 8.1%, away 4.7% of frames) | counts; clean data 0% | **half fixed**: near-duplicates and touchline objects removed (→ 4.1% / 2.5%); the rest are real people (officials, subs) per the detector; copied into practice | `cleanup.cap_team` |
 | Touchline tracks (subs, staff) | 33 tracks ≥ 10 s; detector: real people | harmless (never nearest the ball); partly removed by the cap | `cleanup.cap_team` |
-| Players missing (< 18 objects on 9% of frames) | counts; detector sees ~3.6 untracked people per such frame | open; copied into practice | `damage.py` |
+| Players missing (< 18 objects on 9% of frames) | 56 episodes, median 2 s (some > 30 s), median 14 tracked (sometimes 4), 86% while the ball is missing; detector sees ~3.6 untracked people per such frame | open; copied into practice as episodes | `damage.py` |
 | Wrong team labels (~2% of objects, ~5% in the boxes) | the two trackers disagree on 1.8% (5.1% in boxes) | open (shirt-colour check planned, plan V8); copied into practice | `damage.py` |
 | Referee not tracked | 1 of 333 long tracks looks like a referee | not a problem | – |
 | "6% of player movement filled in" | the same test flags 2-4.5% on clean data | not a problem (false alarm) | – |

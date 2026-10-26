@@ -139,7 +139,9 @@ class Damage(unittest.TestCase):
                   "team": np.array([0] * 11 + [1] * 11, dtype=np.int8), "labels": labels,
                   "halves": [(1, 100, n - 1)], "pitch": (105.0, 68.0)}
         self.profile = {"missing_share": 0.4, "gap_lengths": np.array([150, 300, 600]),
-                        "few_players_share": 0.1, "extra_share": {0: 0.08, 1: 0.05}}
+                        "few_players_share": 0.1, "extra_share": {0: 0.08, 1: 0.05},
+                        "few_episodes_per_frame": 1 / 3000, "few_lengths": np.array([50, 500]),
+                        "few_counts": np.array([4, 14, 17]), "few_in_stoppage": 0.86}
 
     def test_rates_and_labels(self):
         for scenario in damage_kit.SCENARIOS:
