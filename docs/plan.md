@@ -185,7 +185,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | V14 | Detector finds the ball at restart moments: which spot (touchline, corner flag, goal area, centre) | planned (dive 2) | |
 | V15 | Detector counts people on the pitch to measure missing players | planned, low priority | |
 | V17 | Confirm from the video that the provided ball path is smoothed | done: inconclusive | the detector loses the ball in kicks (motion blur); A3 stays unconfirmed |
-| T1 | Football-trained detector pilot on ~200 frames: speed, agreement with the provided ball, ball found in gaps | next | Kovidh's suggestion: improve the tracking itself |
+| T1 | Football-trained detector pilot on our video | done | ball within 2 m on 50% of frames (55% zoomed); not enough for our own track |
 | T3 | Our own ball track from the video for every graded frame | parked | off-the-shelf detector finds the ball ~50% of the time on the wide view; broadcast route needs disk space |
 | T4 | Methods re-run on our own ball track | planned (after T3) | |
 | V16 | **Overlay clips of our match for Kovidh** (tracking drawn on the tactical video) for each dive's error types | next (dive 1) | Kovidh watches and describes in general terms |
