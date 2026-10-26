@@ -4,6 +4,26 @@ Everything learned about the provided assets: what we may use, what the audits f
 source can be trusted. Numbers are whole-match counts; nothing here is a row, a frame or a cell of
 the match data. The scripts that produced each figure are named in each section.
 
+## Assumptions register
+
+What our methods and tests rely on, how well each is verified, and how to verify it better.
+Confidence: **high** (several independent checks), **medium** (one kind of evidence), **low**
+(estimated or inferred). Re-read before relying on any of them.
+
+| # | Assumption | Evidence so far | Confidence | How to verify better |
+|---|---|---|---|---|
+| A1 | Ball gaps of 5 s+ are mostly stoppages | Kovidh's review of the 15 longest gaps; gap-length counts; the broadcast tracker; the video detector sees a ball in ~2/3 of gap frames | high | – |
+| A2 | Dead ball is ~40-50% of our match | LaLiga ball-in-play figures; DFL matches 41-52% | medium | – |
+| A3 | **The provided ball path is smoothed over ~0.9 s** | tracking numbers only (sharp velocity changes 1.9% vs 9-13% in DFL) | medium | **detector on runs of consecutive video frames: does the real ball stop sharply where the recorded one glides? (plan V17)** |
+| A4 | DFL's possession definition matches our ground truth's | both come from a tracking provider's fields (CHALLENGE.md); in DFL the new team is within 1 m at 84% of changes | medium-low | compare definitional patterns (where changes happen relative to players), without tuning anything |
+| A5 | The damaged practice matches look like our match | fault kit built from our measured rates; ball smoothing added 2026-10-26 | medium | **realism report** (`scripts/realism_report.py`): every measure side by side |
+| A6 | A practice score predicts the real score | the published baseline: 0.238 practice vs 0.243 real; other baselines within 0.02-0.04 | medium-high | – |
+| A7 | Imitation Smart Tagging resembles the real tags | coverage and phase lengths measured; accuracy estimated from v4's agreement | low | – |
+| A8 | Commentary trails play by ~5 s | best agreement at 5 s, but agreement is near chance | low | event-focused pass (plan S3e) |
+| A9 | The tactical ball is more reliable than the broadcast one | video detector: closer to tactical 23 times, broadcast 11, neither 29 | medium | – |
+| A10 | The "ghost" is a frozen leftover track | frozen to the mm for ~10 min; detector finds no person there (6% vs 94%) | high | – |
+| A11 | Smart Tagging team tags are ~88% right in open play, ~60% near the box | vs clear control in the tracking; the two trackers agree on clear control 97% | medium | – |
+
 ## Data-quality register
 
 Every problem found in the provided data, and what we do about it. Status: **fixed** (code removes

@@ -40,6 +40,21 @@ submission of the best model.
 our match: overlay clips Kovidh watches), (3) the research, (4) fixes from every source below,
 (5) practice test with fresh seeds, then our match's checks, (6) write-up in `docs/deep-dives/`.
 
+### Track T: improve the tracking data itself (from 2026-10-26)
+
+RULES.md: "Improving that data, or replacing it with your own, is entirely legitimate." The touch
+rule worked on a sharp ball (+0.06 on practice) and failed only because the provided ball path is
+smoothed; a ball track of our own from the video could be sharp, and could fill gaps.
+
+| Step | Experiment | Rows | Status |
+|---|---|---|---|
+| T0 | **Realism report**: our match vs damaged practice on every measure, flagging gaps | P1d | ⏳ running |
+| T1 | **Football-trained detector pilot** (~200 frames): speed per frame, how often it finds the ball where the provided track has one, and where it has none | V9, T1 | next (runs alone) |
+| T2 | **Confirm the smoothing from the video**: detector on runs of consecutive frames around kicks; compare the real ball's speed changes with the recorded ones | V17 | with T1 |
+| T3 | If fast and accurate: **our own ball track** for every graded frame (detector + homography + a simple tracker joining detections), overnight | T3 | after T1 |
+| T4 | v4's touch rule and the trained models on our own ball track | T4 | after T3 |
+| T5 | Player re-detection (missing players), team labels from shirt colours | V8, V15 | later |
+
 ### Deep dive 1: the team call while the ball travels (passes, loose balls): in progress
 
 | Track | Experiment | Rows | Status |
@@ -169,6 +184,10 @@ our match: overlay clips Kovidh watches), (3) the research, (4) fixes from every
 | V13 | Qwen3-VL 2B pilot with crops and sequences | planned | fits in memory; weaker |
 | V14 | Detector finds the ball at restart moments: which spot (touchline, corner flag, goal area, centre) | planned (dive 2) | |
 | V15 | Detector counts people on the pitch to measure missing players | planned, low priority | |
+| V17 | **Confirm from the video that the provided ball path is smoothed** (detector on consecutive frames around kicks) | planned (track T, with T1) | assumption A3 |
+| T1 | Football-trained detector pilot on ~200 frames: speed, agreement with the provided ball, ball found in gaps | next | Kovidh's suggestion: improve the tracking itself |
+| T3 | Our own ball track from the video for every graded frame (detector + homography + a simple tracker) | planned (after T1) | could restore sharp touches and fill gaps |
+| T4 | Methods re-run on our own ball track | planned (after T3) | |
 | V16 | **Overlay clips of our match for Kovidh** (tracking drawn on the tactical video) for each dive's error types | next (dive 1) | Kovidh watches and describes in general terms |
 | V9 | **Best vision models that fit the laptop**: Qwen3-VL 4B (8B needs ~12 GB); football-trained detectors (YOLOv11 "soccana": players/ball/referees; RF-DETR ball) | planned (after the pilot) | check licences and that none was trained on our match |
 | V10 | **Re-download the broadcast video** and run vision models on its close-ups (mapped to tactical time by the alignment) | planned, Kovidh to download | players and ball are far larger than in the wide tactical view |
@@ -185,6 +204,7 @@ our match: overlay clips Kovidh watches), (3) the research, (4) fixes from every
 |---|---|---|---|
 | P1 | Practice-match test bench (open data, fault kit, calibration) | done | `scripts/open_test.py` |
 | P1c | Fault kit: smooth the practice ball like our tracker's (23-frame moving average) | done | practice balls now match ours on 3 measures |
+| P1d | **Realism report**: our match vs the practice matches on every measure, flagging big differences; re-run whenever the kit changes | now | `scripts/realism_report.py`; added after the smoothing gap went unnoticed |
 | P1b | Fault kit, missing faults: wrong team labels (1.8% of objects, 4× likelier in the boxes) and large ball errors (5-15 m on ~3.5% of frames) | done | practice baseline 0.248 vs real 0.243; v3 0.352 vs v2 0.284 |
 | P2 | Organiser questions: issue #14 (saving model outputs; clips → rules), #11 | open | check each session; upstream RULES now allow people to watch the video |
 | P3 | Merge the organisers' latest docs (23 Oct) into our branch | planned | offered, not done |
