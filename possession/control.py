@@ -132,7 +132,7 @@ def keep_through_duels(events, dist, keep):
 
 def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTROL_FRAMES,
                     vote_window=50, touch=False, dv=TOUCH_DV, pass_by=PASS_BY, keep=0.0,
-                    tags=None, tag_kinds=("open",), stale=None):
+                    tags=None, tag_kinds=("open",), stale=None, span=TOUCH_SPAN):
     """HOME/AWAY per frame for live play (dead frames get a placeholder the caller overwrites).
     touch=True uses control_events_touch (control by touch or slow hold) instead of the plain
     3-frame hold; keep > 0 keeps the ball with its holder through duels (keep_through_duels).
@@ -142,7 +142,7 @@ def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTRO
     dist = team_distances(tracking["players"], tracking["ball"], tracking["team"], pitch)
     if touch:
         events = control_events_touch(dist, tracking["ball"] * np.array(pitch), reach, duel,
-                                      frames, dv, pass_by)
+                                      frames, dv, pass_by, span)
     else:
         events = control_events(dist, reach, duel, frames)
     if keep > 0:

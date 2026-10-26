@@ -29,6 +29,12 @@ Faults:
                 object-frames, BOX_WEIGHT times likelier inside a penalty box. Our two trackers
                 give the same person different teams on 1.8% of matched objects, 5.1% in the
                 boxes (audit_confirm.py).
+  ball smoothing  our tracker's ball path is heavily smoothed: in graded live play its velocity
+                changes by >= 7 m/s within 0.24 s on 1.9% of frames (clean DFL: 9-13%), 90th
+                percentile 4.3 m/s, changes >= 3 m/s on 23%. The damaged practice ball smoothed
+                with a BALL_SMOOTH-frame moving average inside each visible run matches that
+                (2.3-2.4%, 4.3-4.4 m/s, 21-25%; 19 frames was still too rough, 27 too smooth);
+                a kick then looks gradual, as in our data. Applied last, after noise and errors.
   ball errors   the ball 5-15 m from where it is, for 1-3 s, on BALL_ERROR_SHARE of visible
                 frames. Our two trackers' balls are > 5 m apart on 10.5% of frames, and where the
                 video could decide, our tactical tracker was the wrong one about 1 time in 3
@@ -66,6 +72,7 @@ SWAP_SLOTS = 2                # per team
 BALL_ERROR_SHARE = 0.035      # of visible ball frames
 BALL_ERROR_RUN = (1, 3)       # s
 BALL_ERROR_SIZE = (5.0, 15.0) # m
+BALL_SMOOTH = 23              # frames, moving average (see the docstring)
 HOME, AWAY = 0, 1
 
 
@@ -141,6 +148,21 @@ def _smooth_noise(n, rng):
     return smooth / smooth.std(axis=0) * BALL_NOISE
 
 
+def _smooth_runs(ball, width):
+    """Centred moving average of `width` frames inside each run with a ball (nothing crosses a
+    gap); runs shorter than `width` are left as they are."""
+    out = ball.copy()
+    seen = ~np.isnan(ball[:, 0])
+    kernel = np.ones(width) / width
+    half = width // 2
+    for a, b in _runs(seen):
+        if b - a < width:
+            continue
+        for k in range(2):
+            out[a + half:b - half, k] = np.convolve(ball[a:b, k], kernel, "valid")
+    return out
+
+
 def damage(t, scenario, rng, profile):
     """A damaged copy of an external match `t` (from load_source). Labels are left untouched."""
     n, slots = t["players"].shape[:2]
@@ -157,7 +179,7 @@ def damage(t, scenario, rng, profile):
         angle = rng.uniform(0, 2 * np.pi)
         size = rng.uniform(*BALL_ERROR_SIZE)
         ball[a:b] += np.array([np.cos(angle), np.sin(angle)]) * size / pitch
-    out["ball"] = ball
+    out["ball"] = _smooth_runs(ball, BALL_SMOOTH)
 
     # Missing players: a few at a time, for a few seconds.
     players = t["players"].copy()
