@@ -83,5 +83,17 @@ First look, 2 clean DFL matches:
 | touch dv 3, pass-by 8 | 15% | 260 | 0.623 |
 | **touch dv 5, pass-by 6** | **17%** | **199** | **0.646** |
 
-Next: a sweep on the **damaged** practice matches (tracking noise can fake velocity changes),
-then fresh seeds, then our match's sanity checks.
+## Step 5: the damaged practice matches
+
+Sweep (seed 0, all 8 matches × 3 damage scenarios; dv 3/5/7, pass-by 4/6/8, reach 1.0/1.5):
+
+| Setting | practice | stoppage / mixed / random |
+|---|---|---|
+| v3 (hold 3 frames) | 0.353 | 0.430 / 0.340 / 0.287 |
+| **touch dv 7, pass-by 6, reach 1.0** | **0.409** | **0.504 / 0.393 / 0.329** |
+| next five settings | 0.399–0.406 | all above v3 in every scenario |
+
+The gain survives tracking noise (+0.056) and is stable across neighbouring settings. Reach
+1.5 m is worse than 1.0 m everywhere. The best dv sits at the edge of the grid, so the next sweep
+tries 7/9/12, together with the duel rule for pattern 3 (`keep_through_duels`: a change counts only
+if the holder's nearest player is at least `keep` m from the ball; keep 0/1.5/2/3).

@@ -109,11 +109,30 @@ def control_events_touch(dist, ball_m, reach=REACH, duel=DUEL, frames=CONTROL_FR
     return events
 
 
+def keep_through_duels(events, dist, keep):
+    """Drop a change of team unless the team in possession is clearly away from the ball.
+
+    Deep dive 1's real cases: in tight pressing the holder keeps a slow ball while a challenger
+    hovers about 1 m away, and the plain rule flips whenever the challenger is a few centimetres
+    closer. The answers keep the ball with the holder ("a duel does not change possession"). So
+    an event for the other team counts only if the current team's nearest player is at least
+    `keep` m from the ball at that frame."""
+    out = events.copy()
+    current = NOBODY
+    for f in np.flatnonzero(events != NOBODY):
+        team = events[f]
+        if current != NOBODY and team != current and dist[f, current] < keep:
+            out[f] = NOBODY
+            continue
+        current = team
+    return out
+
+
 def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTROL_FRAMES,
-                    vote_window=50, touch=False, dv=TOUCH_DV, pass_by=PASS_BY):
+                    vote_window=50, touch=False, dv=TOUCH_DV, pass_by=PASS_BY, keep=0.0):
     """HOME/AWAY per frame for live play (dead frames get a placeholder the caller overwrites).
     touch=True uses control_events_touch (control by touch or slow hold) instead of the plain
-    3-frame hold."""
+    3-frame hold; keep > 0 keeps the ball with its holder through duels (keep_through_duels)."""
     pitch = tracking.get("pitch", PITCH)
     dist = team_distances(tracking["players"], tracking["ball"], tracking["team"], pitch)
     if touch:
@@ -121,6 +140,8 @@ def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTRO
                                       frames, dv, pass_by)
     else:
         events = control_events(dist, reach, duel, frames)
+    if keep > 0:
+        events = keep_through_duels(events, dist, keep)
     fallback = vote_with_hold(codes, vote_window)
     team = fallback.copy()
     edges = np.diff(np.concatenate(([0], (~dead).astype(np.int8), [0])))
