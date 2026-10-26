@@ -13,8 +13,9 @@ Read this first when picking the project up, together with CLAUDE.md, **docs/pro
   plan needs the 14 GB broadcast video any more.
 - **Insurance submission:** `python run.py --name insurance_baseline` → baseline + match rules,
   valid. To be uploaded to the form when the link arrives.
-- **Best model so far:** `v3` (practice matches 0.377 vs v2 0.311 vs baseline 0.263; public 0.357;
-  dead ball 40% on our match). `evaluation/results/ours_v3.csv` is valid and reproducible.
+- **Best model so far:** `v4` (practice 0.410 vs v3 0.352 vs baseline 0.248 on the harder fault
+  kit; public 0.431; dead ball 40%). `evaluation/results/ours_v4.csv` is valid, reproducible, and
+  the frozen submission candidate.
 - **Tools:** damage test, sanity report, gap clips, and (new) `audit_tracking.py`,
   `audit_tagging.py`, `extract_audio.py`, `align_broadcast.py`.
 

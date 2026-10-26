@@ -1,6 +1,6 @@
 # Deep dive 1: the team call while the ball is travelling
 
-Status: in progress (started 2026-10-26). Practice matches only (open data); nothing here uses
+Status: in progress (started 2026-10-26). **v4 adopted** after steps 1-5; case review, Smart Tagging and clips for Kovidh still to do. Practice matches only (open data); nothing here uses
 our match's answers.
 
 ## The problem
@@ -110,3 +110,16 @@ dv 7 stays best. **The duel rule hurts at every setting**: requiring the holder 
 also blocks real tackles, where the holder is still beside the ball when he loses it. One pressing
 case did not represent the pattern. It stays off; pressing errors go back to the case review.
 Candidate v4 = v3 + touch rule (dv 7, pass-by 6, reach 1.0).
+
+## Step 6: fresh seeds and our match → v4
+
+Fresh seeds 5 and 6, all 8 matches × 3 scenarios: **v4 better than v3 in 48/48 runs**, mean
+0.352 → 0.410 (per match +0.026 to +0.089).
+
+On our match (checks only, never tuned on): 365 possessions, 3.45 per minute against 3.40 in the
+public truth (v3: 4.41); Smart Tagging team agreement 74/78% (v3 70/74%); quiz 0.431 (v3 0.357,
+within the quiz's ~0.33 noise band but at the top of the public board). Valid and byte-identical
+on rerun. **v4 is the new best model and this week's frozen submission candidate.**
+
+Still to do in this dive: a larger case review of the remaining errors (including pressing), the
+Smart Tagging test, and overlay clips of our match for Kovidh.

@@ -17,7 +17,7 @@ Last updated: 2026-10-25.
 
 | | |
 |---|---|
-| **Best model** | **v3**: practice matches 0.38, quiz 0.357 (v2: 0.31, 0.371; v1: 0.29, 0.362; baseline: 0.26, 0.326) |
+| **Best model** | **v4**: practice 0.41, quiz 0.431 (v3: 0.35, 0.357; v2: 0.28, 0.371; v1: 0.27, 0.362; baseline: 0.25, 0.326). Practice scores here use the harder fault kit |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
 | **Working on** | commentary (transcribing locally), then precise Smart Tagging, who restarts, the decoder |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
@@ -65,7 +65,8 @@ Code names in brackets are what the scripts call each model.
 | v1 + clean-up (`blackout_v1_clean`) | 0.28 | 0.35 / 0.27 / 0.23 | – | – | – | no gain |
 | v2 + precise tracking (`v2_precise`) | 0.31 | as v2 | 0.370 | – | 39% | neutral; kept as an option |
 | v2 (`v2`) | 0.31 | 0.39 / 0.30 / 0.25 | 0.371 | – | 40% | superseded |
-| **v3** (`v3`) | **0.38** | – | 0.357 | – | **40%** | **current best** |
+| v3 (`v3`) | 0.35 (harder kit) | 0.43 / 0.34 / 0.29 | 0.357 | – | 40% | superseded |
+| **v4** (`v4`) | **0.41** (harder kit) | **0.50 / 0.39 / 0.33** | **0.431** | – | **40%** | **current best; frozen candidate** |
 
 ---
 
@@ -256,6 +257,31 @@ terms.
 | **Decoder**: one model weighing all clues, each source's trust learned on the practice matches | planned | – |
 | Whistle detector | planned | – |
 | Local video model on the moments the decoder is unsure about, overnight | planned | – |
+
+### Stage 8 · Deep dives (from Oct 26)
+
+**Why.** Many components had been tried quickly; some ideas were dismissed after one weak
+attempt and Smart Tagging went unused. From here, one problem at a time, ordered by points at
+stake, with real cases looked at before any fix (`docs/deep-dives/`).
+
+**Also done:** the practice damage gained the two faults it lacked (wrong team labels, large
+ball errors). The organisers' baseline now scores 0.248 on practice against 0.243 on the real
+match, so practice scores are close to real scores. The commentary was tested properly (it does
+not track possession; it may mark rare long stoppages) and two vision-model pilots were run (the
+wide view is illegible to a small model; a stronger model ran out of memory, then filled the disk
+with swap).
+
+**Deep dive 1: the team call while the ball travels** (`docs/deep-dives/01-ball-travelling.md`)
+1. Anatomy: at 2,351 true changes of possession, v3 missed 23% and invented 852.
+2. Real cases, drawn top-down from the practice tracking (`scripts/case_viewer.py`): three
+   patterns, namely fast passes flying past an opponent, quick one-touch interceptions, and duels
+   and pressing. Two of four inferred causes were wrong until the plays were looked at.
+3. The papers: possession changes when the ball's speed or direction changes by a player
+   (Vidal-Codina; Link & Hoernig).
+4. **Touch rule:** control by a touch (≥ 7 m/s change in the ball's velocity) or a slow hold; a ball
+   passing by never counts. A firmer duel rule was tried and dropped (it blocks real tackles).
+5. **v4: practice 0.352 → 0.410, better in all 48 runs; quiz 0.431; possessions per minute on our
+   match now match the truth's (3.45 vs 3.40).**
 
 ## Next steps, in order
 
