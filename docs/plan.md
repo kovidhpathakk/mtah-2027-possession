@@ -57,6 +57,9 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | T6 | **Broadcast pilot**: the same ball detector on the zoomed-in broadcast video (ball several times larger), mapped to tactical time | T6 | ⏳ running (`scripts/ball_pilot_broadcast.py`) |
 | T7 | Fine-tune a ball detector on **public wide-angle football footage** with labelled balls (e.g. fixed-camera research datasets), possibly on a free cloud GPU since only public data goes there. **Never on our match's video with the provided tracking as labels**: the organisers refused exactly that (issue #2) | T7 | planned, if T6 is not enough |
 | T8 | A vision-language model (Qwen-VL) for tracking | – | dropped: good at describing scenes, imprecise at positions and far too slow for 25 frames a second; detectors are the right tool |
+| T9 | **WASB ball tracker** (Tarashima et al., BMVC 2023, [arXiv 2311.05237](https://arxiv.org/abs/2311.05237); code MIT, github.com/nttcom/WASB-SBDT): built for small fast balls, uses 3 consecutive frames (copes with blur), soccer weights trained on the ISSIA-CNR soccer dataset (**fixed wide cameras**, like our tactical view; not our match); reported soccer F1 ~0.88. Its model zoo also has TrackNetV2 / MonoTrack soccer weights | T9 | **next candidate**: needs Kovidh's approval to download (pickle weights on Google Drive; scan before loading); weights/dataset licence to check |
+| T10 | Player detection + multi-object tracker (ByteTrack / BoT-SORT) + teams from shirt colours (Roboflow "sports" pipeline): fill missing players, check team labels | T10 | planned (player model already downloaded) |
+| T11 | SAM 2 video tracking seeded with the provided ball positions, to bridge short gaps | T11 | planned, low priority (heavy on CPU) |
 
 ### Deep dive 1: the team call while the ball travels (passes, loose balls): in progress
 
