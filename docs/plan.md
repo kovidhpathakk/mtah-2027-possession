@@ -46,7 +46,9 @@ our match: overlay clips Kovidh watches), (3) the research, (4) fixes from every
 |---|---|---|---|
 | Tracking + papers | touch rule (Vidal-Codina, Link & Hoernig) → **v4** | M7b | ✅ done |
 | Tracking + papers | duel rule ("holder keeps the ball") | M7c | ✅ dropped (blocks real tackles) |
-| Data check | our ball is smoothed: copy into practice, re-tune the touch rule | P1c, M7e | ⏳ running |
+| Data check | our ball is smoothed: copy into practice, re-tune the touch rule | P1c, M7e | ✅ done: **touch rule's gain was an artefact** (realistic kit: v3 0.291, v4 0.288, best re-tune 0.297) |
+| Tracking | anatomy and case review redone on the realistic kit | M7d | next |
+| Tracking | longer-window cues: ball direction change over ~1 s; the receiver slows and turns | M24 | next |
 | Papers | Link & Hoernig's end-of-possession rule: possession ends when no teammate can reach the ball's predicted position within 1 s | M20 | next |
 | **Trained on DFL** | **control classifier** (Link & Hoernig's features: duration, ball speed and acceleration, opponents within 0.5-5 m) trained on DFL's true possession changes | M19 | next |
 | **Trained on DFL** | **learned possession model** (Borghesi 2023: a sequence model over tracking features) giving P(home / away) per frame | M15 | next |
@@ -115,7 +117,8 @@ our match: overlay clips Kovidh watches), (3) the research, (4) fixes from every
 | M7b | Possession logic, part 2: control by touch (ball velocity change near a player) or slow hold; no credit for a ball passing by | Link & Hoernig 2017, Vidal-Codina 2022 | **now (deep dive 1)** | damaged practice 0.353 → 0.409 (dv 7, pass-by 6); candidate v4 |
 | M7c | Duel rule: keep the ball with its holder until he is clearly away (`keep_through_duels`) | deep dive 1 real cases | dropped | worse at every setting (0.394 at 1.5 m, 0.373 at 2 m): it also blocks real tackles |
 | M7d | Pressing errors: understand from a larger case review, then retry | deep dive 1 | planned | |
-| M7e | **Touch rule re-tuned on the smoothed practice ball** (our tracker smooths the ball over ~0.9 s, so kicks look gradual) | data check 2026-10-26 | **now** | practice recalibration + sweep running |
+| M7e | Touch rule re-tuned on the smoothed practice ball | data check 2026-10-26 | done | best 0.297 vs v3 0.290: no real gain; v4's earlier gain was an artefact of sharp practice balls |
+| M24 | Longer-window team-call cues for a smoothed ball: change of ball direction over ~1 s; receiver decelerates and turns | deep dive 1 | next | |
 | M8b | Smart Tagging team tags where v4 is stale | deep dive 1 | done: no gain | 0.409 vs 0.409; tags overwrite short possessions; re-test after M7e |
 | M8 | Precise Smart Tagging: exact restart frame inside each 35 s window, taker's team, trust per tag type | Smart Tagging audit | next 2 | |
 | M9 | Imitation clues on the practice matches (fake Smart Tagging and commentary from their event lists, with our sources' measured flaws) | our design | next 3 | so commentary and tagging can be tested fairly |

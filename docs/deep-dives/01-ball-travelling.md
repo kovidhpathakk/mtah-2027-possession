@@ -163,7 +163,7 @@ open+final / all.
 No gain: a phase tag names one team for 12-30 s, so where it overrules v4 it also overwrites the
 other team's short possessions inside the phase. Not adopted; re-test after step 8.
 
-## Step 8: our tracker's ball is smoothed (in progress)
+## Step 8: our tracker's ball is smoothed: the touch rule's gain was an artefact
 
 Checking whether practice balls move like ours showed they do not: our ball's velocity changes by
 >= 7 m/s within 0.24 s on 1.9% of graded live frames against 9-13% in clean DFL. Our tracker
@@ -171,3 +171,15 @@ smooths the ball over roughly 0.9 s, so kicks look gradual and the touch rule tu
 fires 4-5× less often on our match. The fault kit now applies a 23-frame moving average (matching
 our ball on three measures). Running: the practice test recalibrated against the published
 baselines, and the touch rule re-tuned (dv 2-7 m/s, span 3/6/10 frames, pass-by 6/8).
+
+**Result (realistic kit).** baseline 0.238 (real 0.243), v1 0.259, v2 0.271, **v3 0.291, v4 0.288**;
+best re-tuned touch rule 0.297 (noise vs v3). The touch rule's gain came from practice balls being
+sharper than ours. v4 stays the candidate on the strength of our match's checks (possession rate,
+Smart Tagging agreement), with that caveat.
+
+**What this changes for the dive.** On a ball smoothed over ~0.9 s, short-window rules cannot see
+touches. Next, in order: (1) the anatomy and case review redone on the realistic kit; (2) models
+trained on the practice matches (control classifier, possession model), which can use longer
+context and player movement; (3) longer-window trajectory rules (did the ball's direction change
+over ~1 s?) and receiver cues (the receiver slows and turns); (4) Link & Hoernig's
+end-of-possession rule.

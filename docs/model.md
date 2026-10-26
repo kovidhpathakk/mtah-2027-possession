@@ -89,16 +89,22 @@ was audited; their use is planned inside the deep dives (`docs/plan.md`, "Data u
 
 | Test | Score |
 |---|---|
-| Practice matches (8 other matches with answers, damaged like our tracking) | 0.410 (the organisers' baseline: 0.248 here, 0.243 on the real match) |
+| Practice matches, realistic damage (8 other matches; ball smoothed like ours) | 0.288 (v3: 0.291; the organisers' baseline: 0.238 here, 0.243 on the real match) |
 | Public 5 minutes (17 possessions; a sanity check, noise band ~0.33) | 0.431 |
 | Our match: possessions per minute / dead-ball share | 3.45 (public truth 3.40) / 40% |
 
+**Caveat.** The touch rule (step 4) was tuned on practice balls sharper than ours. On a ball
+smoothed like ours it adds nothing over v3 on practice (0.288 vs 0.291); v4 is kept because it is
+better on our match's checks. Deep dive 1 is working on team-call rules that suit a smoothed ball.
+
 ## Version history
+
+Practice scores on the realistic kit (ball smoothed like ours).
 
 | Version | Idea | Practice |
 |---|---|---|
-| organisers' baseline | team of the nearest player to the ball, majority vote over ±2 s; missing ball = dead | 0.248 |
-| v1 (`blackout_v1`) | baseline + ball gaps: 20 s+ = dead, 2-20 s dead only if players slow, else keep the team (from Kovidh's review of the 15 longest gaps) | 0.269 |
-| v2 | stoppages rebuilt from measurements (step 3) + clean-up (step 2) | 0.284 |
-| v3 | team by control: 1 m, no duel, held 3 frames (step 4, first version) | 0.352 |
-| **v4** | + touch rule and pass-by check (step 4 as above) | **0.410** |
+| organisers' baseline | team of the nearest player to the ball, majority vote over ±2 s; missing ball = dead | 0.238 |
+| v1 (`blackout_v1`) | baseline + ball gaps: 20 s+ = dead, 2-20 s dead only if players slow, else keep the team (from Kovidh's review of the 15 longest gaps) | 0.259 |
+| v2 | stoppages rebuilt from measurements (step 3) + clean-up (step 2) | 0.271 |
+| v3 | team by control: 1 m, no duel, held 3 frames (step 4, first version) | 0.291 |
+| **v4** | + touch rule and pass-by check (step 4 as above) | **0.288** (better than v3 on our match's checks) |

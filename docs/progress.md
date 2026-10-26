@@ -14,9 +14,9 @@ Last updated: 2026-10-25.
 
 | | |
 |---|---|
-| **Best model** | **v4**: practice 0.41, quiz 0.431 (v3: 0.35, 0.357; v2: 0.28, 0.371; v1: 0.27, 0.362; baseline: 0.25, 0.326). Practice scores here use the harder fault kit |
+| **Best model** | **v4** (frozen candidate): practice 0.288 on the realistic kit (v3 0.291, baseline 0.238 vs its real 0.243), quiz 0.431. Realistic expectation on the real match: ~0.29 |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v2.csv` also valid |
-| **Working on** | Deep dive 1: re-tuning the touch rule for our tracker's smoothed ball |
+| **Working on** | Deep dive 1: team-call methods that suit our smoothed ball (trained models, longer-window cues) |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Docs** | `docs/README.md` maps every file |
 | **Deadline** | 17 November 2026 |
@@ -53,20 +53,17 @@ We get marks from three "exams":
 
 ## Model versions
 
-Code names in brackets are what the scripts call each model.
+Practice = mean spellF1 over 8 matches × 3 damage scenarios on the **realistic kit** (ball
+smoothed like ours, from 2026-10-26). Earlier, sharper-ball numbers are in `experiments.md`.
 
-| Version | Practice (avg) | Practice: stoppage / mixed / random | Quiz | Final | Dead ball on our match | Status |
-|---|---|---|---|---|---|---|
-| *organisers' baseline* (`baseline`) | *0.26* | *0.32 / 0.25 / 0.22* | *0.326* | *0.243* | *32%* | *yardstick* |
-| insurance (`insurance_baseline`) | 0.26 | as baseline | 0.326 | – | 32% | ready to upload |
-| v1 (`blackout_v1`) | 0.29 | 0.35 / 0.27 / 0.23 | 0.362 | – | 32% | superseded |
-| v1 + clean-up (`blackout_v1_clean`) | 0.28 | 0.35 / 0.27 / 0.23 | – | – | – | no gain |
-| v2 + precise tracking (`v2_precise`) | 0.31 | as v2 | 0.370 | – | 39% | neutral; kept as an option |
-| v2 (`v2`) | 0.31 | 0.39 / 0.30 / 0.25 | 0.371 | – | 40% | superseded |
-| v3 (`v3`) | 0.35 (harder kit) | 0.43 / 0.34 / 0.29 | 0.357 | – | 40% | superseded |
-| **v4** (`v4`) | **0.41** (harder kit) | **0.50 / 0.39 / 0.33** | **0.431** | – | **40%** | **current best; frozen candidate** |
-
----
+| Version | Practice | Quiz | Final | Dead ball on our match | Status |
+|---|---|---|---|---|---|
+| *organisers' baseline* (`baseline`) | *0.238* | *0.326* | *0.243* | *32%* | *yardstick* |
+| insurance (`insurance_baseline`) | 0.238 | 0.326 | – | 32% | ready to upload |
+| v1 (`blackout_v1`) | 0.259 | 0.362 | – | 32% | superseded |
+| v2 (`v2`) | 0.271 | 0.371 | – | 40% | superseded |
+| v3 (`v3`) | 0.291 | 0.357 | – | 40% | level with v4 on practice |
+| **v4** (`v4`) | **0.288** | **0.431** | – | **40%** | **frozen candidate** (better on our match's checks) |
 
 ## The story so far
 
@@ -282,8 +279,11 @@ with swap).
    match now match the truth's (3.45 vs 3.40).**
 6. Smart Tagging's team tags tried where v4 is stale: no gain (tags overwrite short possessions).
 7. **Our tracker's ball turned out heavily smoothed** (sharp velocity changes 1.9% of live frames
-   vs 9-13% in DFL), so the touch rule fires far less on our match than in practice. The practice
-   damage now smooths the ball the same way; the touch rule is being re-tuned.
+   vs 9-13% in DFL). With the practice damage smoothing the ball the same way, **the touch rule's
+   gain disappeared** (v3 0.291, v4 0.288): it had come from practice balls sharper than ours. The
+   baseline now scores 0.238 on practice vs 0.243 for real, so this is the most trustworthy test
+   yet, and it puts us at ~0.29. v4 stays the candidate on our match's checks. The dive now turns
+   to models trained on the practice matches and longer-window cues that suit a smoothed ball.
 
 ## Next steps
 

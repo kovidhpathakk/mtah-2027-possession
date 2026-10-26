@@ -14,6 +14,31 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Realistic (smoothed) practice ball: the touch rule's gain disappears
+
+Practice test with the fault kit's 23-frame ball smoothing (mean over 8 matches × 3 scenarios):
+
+| Method | old kit (ball too sharp) | **realistic kit** | real full match |
+|---|---|---|---|
+| baseline | 0.248 | **0.238** | 0.243 |
+| baseline_smooth25 | 0.233 | 0.219 | 0.200 |
+| baseline_smooth125 | 0.190 | 0.187 | 0.224 |
+| baseline_raw | 0.082 | 0.086 | 0.049 |
+| blackout_v1 | 0.269 | 0.259 | – |
+| v2 | 0.284 | 0.271 | – |
+| v3 | 0.352 | **0.291** | – |
+| v4 | 0.410 | **0.288** | – |
+
+Touch rule re-tuned on the realistic kit (dv 2-7 m/s × span 3/6/10 × pass-by 6/8): best 0.297
+(dv 7, span 3, pass-by 8) vs v3 0.290: noise. **v4's practice gain was mostly an artefact of
+practice balls that were sharper than ours.** On a ball smoothed like ours a kick looks gradual
+and short-window touch detection has little to find. v3 and v4 are level on practice; v4 is
+better on our match's checks (3.45 possessions/min vs truth 3.40, v3 4.41; Smart Tagging 74/78%
+vs 70/74%; quiz 0.431 vs 0.357), so v4 stays the frozen candidate. The baseline's practice score
+(0.238) is now within 0.005 of its real score: this is the most trustworthy test so far, and it
+puts our realistic expectation at ~0.29.
+
+
 ### 2026-10-26 · Our tracker's ball is heavily smoothed; the fault kit now copies it
 
 In graded live play our ball's velocity changes by >= 7 m/s within 0.24 s on 1.9% of frames
