@@ -131,10 +131,13 @@ def keep_through_duels(events, dist, keep):
 
 
 def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTROL_FRAMES,
-                    vote_window=50, touch=False, dv=TOUCH_DV, pass_by=PASS_BY, keep=0.0):
+                    vote_window=50, touch=False, dv=TOUCH_DV, pass_by=PASS_BY, keep=0.0,
+                    tags=None, tag_kinds=("open",), stale=None):
     """HOME/AWAY per frame for live play (dead frames get a placeholder the caller overwrites).
     touch=True uses control_events_touch (control by touch or slow hold) instead of the plain
-    3-frame hold; keep > 0 keeps the ball with its holder through duels (keep_through_duels)."""
+    3-frame hold; keep > 0 keeps the ball with its holder through duels (keep_through_duels).
+    tags + stale: where no control event has been seen for `stale` seconds and a Smart Tagging
+    phase of one of `tag_kinds` covers the frame, the tag's team is used (possession.tagging)."""
     pitch = tracking.get("pitch", PITCH)
     dist = team_distances(tracking["players"], tracking["ball"], tracking["team"], pitch)
     if touch:
@@ -155,4 +158,11 @@ def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTRO
         index = np.arange(b - a)
         last = np.maximum.accumulate(np.where(held != NOBODY, index, -1))
         team[a:b] = np.where(last >= 0, held[np.maximum(last, 0)], fallback[a:b])
+    if tags is not None and stale is not None:
+        from possession.tagging import tag_team
+        tagged = tag_team(len(team), tags, tag_kinds)
+        index = np.arange(len(events))
+        last_event = np.maximum.accumulate(np.where(events != NOBODY, index, -10 ** 9))
+        use = (index - last_event >= stale * 25) & (tagged != NOBODY) & ~dead
+        team[use] = tagged[use]
     return team

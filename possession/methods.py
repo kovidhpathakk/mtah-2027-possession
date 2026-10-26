@@ -6,11 +6,26 @@ a method may skip work elsewhere -- the damage test passes the public window and
 hundreds of times. A method must be deterministic: same arrays in, same labels out.
 """
 
-from possession import baseline, blackout, cleanup, stoppages
+from possession import baseline, blackout, cleanup, stoppages, tagging
+
+
+def _tags(tracking):
+    """Smart Tagging for a match: imitation tags attached to a practice match, the real tags for
+    ours, else none."""
+    if "tags" in tracking:
+        return tracking["tags"]
+    if len(tracking["ball"]) == tagging.OUR_FRAMES:
+        return tagging.real_tags()
+    return None
+
+
 
 METHODS = {
     "v4": lambda tracking, frames=None: stoppages.predict(
         tracking, frames, team_by="control", control_options=dict(touch=True)),
+    "v4_tags": lambda tracking, frames=None: stoppages.predict(
+        tracking, frames, team_by="control",
+        control_options=dict(touch=True, tags=_tags(tracking), stale=4)),
     "v3": lambda tracking, frames=None: stoppages.predict(tracking, frames, team_by="control"),
     "v2": lambda tracking, frames=None: stoppages.predict(tracking, frames),
     "v2_precise": lambda tracking, frames=None: stoppages.predict(tracking, frames, precise=True),

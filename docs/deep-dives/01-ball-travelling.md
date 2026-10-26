@@ -123,3 +123,30 @@ on rerun. **v4 is the new best model and this week's frozen submission candidate
 
 Still to do in this dive: a larger case review of the remaining errors (including pressing), the
 Smart Tagging test, and overlay clips of our match for Kovidh.
+
+## Step 7: Smart Tagging where v4 is stale (in progress)
+
+**Why here.** v4's team errors grow with the time since it last saw a player gain control
+(damaged practice, live frames):
+
+| since last control | share of live play | v4 wrong |
+|---|---|---|
+| < 1 s | 52% | 9% |
+| 1-2 s | 21% | 10% |
+| 2-4 s | 14% | 16% |
+| 4-8 s | 6% | 26% |
+| 8-15 s | 3% | 36% |
+| > 15 s | 4% | ~40% |
+
+About a third of its team errors sit in stretches of 4 s or more without a control event, where
+it only repeats its last call.
+
+**Smart Tagging on our match** (counts only): attacking-phase tags cover 81% of v4's live frames;
+phases last 12-30 s; v4 agrees with build-up 87%, progression 83%, long ball 71%, final third 70%,
+box / chances / transitions 60-66%.
+
+**Test.** `possession/tagging.py` builds imitation tags for the practice matches with the real
+ones' shape (coverage, phase length, accuracy by zone, estimated from v4's agreement allowing for
+v4's own error). Rule under test: where v4 has seen no control event for `stale` seconds and a tag
+of a trusted kind covers the frame, the tag's team is used. Sweep: stale 2/4/8 s × kinds open /
+open+final / all.
