@@ -284,6 +284,9 @@ with swap).
    baseline now scores 0.238 on practice vs 0.243 for real, so this is the most trustworthy test
    yet, and it puts us at ~0.29. v4 stays the candidate on our match's checks. The dive now turns
    to models trained on the practice matches and longer-window cues that suit a smoothed ball.
+8. **Where the points are now** (realistic test): perfect stoppages would add +0.09, perfect team
+   calls in live play +0.42. Three quarters of the team errors happen while the ball travels
+   between players (66% of live play, v4 wrong 21% there).
 
 ## Next steps
 

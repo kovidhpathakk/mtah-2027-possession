@@ -183,3 +183,25 @@ trained on the practice matches (control classifier, possession model), which ca
 context and player movement; (3) longer-window trajectory rules (did the ball's direction change
 over ~1 s?) and receiver cues (the receiver slows and turns); (4) Link & Hoernig's
 end-of-possession rule.
+
+## Step 9: where points are lost now (realistic kit, v4)
+
+| What-if | practice |
+|---|---|
+| v4 | 0.288 |
+| v4 with the true stoppages | 0.380 (+0.09) |
+| v4 with the true team in live play | 0.709 (+0.42) |
+
+| Situation (live in truth and in v4) | share of live play | v4 wrong | share of team errors |
+|---|---|---|---|
+| ball travelling, nobody within 1 m | 66% | 21.2% | ~75% |
+| ball at a player's feet | 27% | 9.9% | ~15% |
+| ball missing | 7% | 29.6% | ~10% |
+| first 3 s after a stoppage (overlaps) | 9% | 24.4% | – |
+
+Stoppage frames: v4 misses 25.5% of true dead frames and calls 23.5% of true live frames dead
+(frame shares, damaged practice).
+
+The team call while the ball travels is three quarters of the team errors, and the team call is
+worth four times the stoppages. This dive stays the priority; it now turns to trained models and
+longer-window cues.
