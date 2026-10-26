@@ -59,6 +59,10 @@ smoothed or missing ball.
 Our match: v5 2.82 vs v4 3.45; damage test window 10.8 vs truth 17 (v4 15.0). v5 merges some short
 possessions; on practice that costs less than v4's flicker. Next to study.
 
+**The quiz.** Public 5 minutes 0.607 (v4 0.431), but `run_evaluation.py --bootstrap 1000` puts the
+noise band for 17 possessions at ~0.37, and the window is easy: ball missing 12% as delivered vs 41%
+over the match. With the ball deleted to the match's rate (damage test) v5 averages 0.440.
+
 **Transfer to our match.** Mean confidence max(p, 1-p) on our match's live frames 0.904, unsure
 (0.3-0.7) 11%: the same as on practice (0.88-0.91, 11-16%).
 

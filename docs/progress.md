@@ -297,7 +297,8 @@ with swap).
    **Practice 0.279 → 0.430 on fresh damage, better in 48 of 48 runs**; team right on 89.5% of live
    frames (v4 81.0%), including 84% while the ball is missing (v4 71%). On our match: Smart
    Tagging agreement up (76/82% vs 74/78%), fewer flickers (possessions under 1 s: 3% vs 11%),
-   damage test 0.440 vs 0.329, quiz 0.607 (noted, never tuned on). Rebuilt from nothing, the
+   damage test 0.440 vs 0.329, quiz 0.607 (noted, never tuned on: its noise band is ~0.37 and
+   the 5 minutes are easy, ball missing 12% vs 41% over the match). Rebuilt from nothing, the
    submission is byte-identical.
    **What it learned:** shuffling the team-shape clues costs 17 points of accuracy, everything else
    2-5. The team with the ball pushes up and spreads out; the other team drops goal-side of the
