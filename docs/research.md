@@ -259,13 +259,33 @@ Scripts: `scripts/audit_tracking.py [--source broadcast]`, `scripts/audit_taggin
 
 ## 8. What to build, ranked by value for effort
 
+Updated after the audit (§7). Every audit finding maps to a row here.
+
 | # | Idea | From | Effort | Why |
 |---|---|---|---|---|
-| 1 | **Restart detector from player positions** (kickoff, goal kick, corner, throw-in, penalty) | Vidal-Codina | low | Marks where dead ball ends; covers stoppages with the ball visible |
-| 2 | **Possession logic**: possession zone, duel = keep last team, ball smoothing, kick = acceleration peak | Vidal-Codina, Link & Hoernig | low–medium | Replaces "nearest player"; fewer false flips |
-| 3 | **Keeper and ghost fixes** | our findings | low | Removes a known source of wrong team |
-| 4 | **HMM / Viterbi decoder** over H/A/D | our design | medium | Directly targets spellF1: whole-match consistent possessions |
-| 5 | **Whistle detector** on the tactical audio | literature | medium | Marks stoppage starts the tracking misses |
-| 6 | **Learned model** trained on SkillCorner / Metrica | open data | medium–high | Learns how signals combine; validated off-match |
-| 7 | **Local vision model pilot**: "is play stopped?" once per second | local VLM | medium (overnight run) | Catches stoppages nothing else sees |
-| 8 | Broadcast commentary | whisper.cpp | high | Parked |
+| 1 | **Restart detector from player positions** (kickoff, goal kick, corner, throw-in, penalty) | Vidal-Codina | low | Smart Tagging tags only 42 of 132 long gaps; this must find the rest, and decide which team restarts (throw-in tags have no team) |
+| 2 | **Gap rule rethink**: every surviving tactical gap is ≥ 5 s, so default to dead and let the restart detector and player speed overrule | audit | low | v1 calls medium gaps live unless players are slow; the audit says most gaps are stoppages |
+| 3 | **Clean-up**: keeper relabel in each team's own box; drop long touchline tracks; cap 11 per team; drop one-frame ball jumps > 2 m | audit | low | ~3,400 keeper frames, 33 touchline tracks, 8% frames with 12+ home objects |
+| 4 | **Possession logic**: possession zone, duel = keep last team, kick = acceleration peak, speed from positions (not the columns) | Vidal-Codina, Link & Hoernig, audit | low–medium | Ball speed column is unusable; player speed column is 0.28 s late |
+| 5 | **Smart Tagging as weighted clues**: team tags strong in open play (~88%), weak near the box (~60%); set pieces as "a restart around here" | audit | low | Uses each tag only as far as it was shown to be right |
+| 6 | **Broadcast as a second opinion**: its ball where tactical has none; replays as a stoppage clue | alignment | medium | 48% of broadcast frames map to tactical frames |
+| 7 | **HMM / Viterbi decoder** over H/A/D | our design | medium | Directly targets spellF1: whole-match consistent possessions |
+| 8 | **Whistle detector** on the tactical audio | literature | medium | Marks stoppage starts the tracking misses |
+| 9 | **Commentary**: Whisper (English) + small local LLM → timed events | local models | medium | Fouls, free kicks and the team awarded them |
+| 10 | **Learned model** trained on DFL / Metrica | open data | medium–high | Learns how clues combine; validated off-match |
+| 11 | **Local vision model pilot**: "is play stopped?" once per second | local VLM | medium (overnight run) | Catches stoppages nothing else sees |
+
+### How the audit numbers were verified
+
+- **Code**: `python -m unittest discover tests` runs each measuring function on made-up data
+  with a known answer (a known speed, a known straight path, a broadcast track shifted by a known
+  offset). All pass.
+- **Against published figures**: the data checker reproduces every number DATA.md publishes.
+- **Two independent sources agreeing**: speed from positions matches the tracker's own player
+  speed column (ratio 0.99, corr 0.93), which also confirms the metre conversion used for the
+  ball. The broadcast offset is found separately from the ball and from the players, and they
+  agree to a frame.
+- **Not verified, only inferred**: *why* there are no 1–5 s ball gaps (the tracker filling them
+  in is the likeliest explanation), whether the objects in Barça's box are the keeper (a teammate
+  saw it on the overlay once), and what the touchline tracks are. Next check: run the same audits
+  on DFL and Metrica as a control, where the data is clean and the answers are known.
