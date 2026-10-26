@@ -115,7 +115,8 @@ def keeper(players, team, ball, t_to_b, players_b, team_b):
         rows = np.arange(first, last + 1)
         p, b = players[rows], ball[rows]
         present = ~np.isnan(p[:, :, 0])
-        goal_x = 0.0 if np.nanmean(p[:, team == HOME, 0]) < LENGTH / 2 else LENGTH
+        goal_x = 0.0 if np.nanmean(p[:, team == HOME, 0]) < np.nanmean(p[:, team == AWAY, 0]) \
+            else LENGTH
         depth = np.abs(p[:, :, 0] - goal_x)
         in_box = (depth <= BOX_DEPTH) & (np.abs(p[:, :, 1] - WIDTH / 2) <= BOX_HALF_WIDTH) \
             & present
@@ -161,8 +162,8 @@ def keeper(players, team, ball, t_to_b, players_b, team_b):
     longest = np.argsort(present.sum(axis=0))[::-1][:2]
     for half, first, last in half_video_blocks(GAME):
         rows = np.arange(first, last + 1)
-        goal = {HOME: 0.0 if np.nanmean(players[rows][:, team == HOME, 0]) < LENGTH / 2
-                else LENGTH}
+        goal = {HOME: 0.0 if np.nanmean(players[rows][:, team == HOME, 0])
+                < np.nanmean(players[rows][:, team == AWAY, 0]) else LENGTH}
         goal[AWAY] = LENGTH - goal[HOME]
         for slot in longest:
             here = present[rows, slot]
@@ -294,7 +295,7 @@ if __name__ == '__main__':
     tac, bro = load_tracking("tactical"), load_tracking("broadcast")
     players, ball, team = tac["players"] * scale, tac["ball"] * scale, tac["team"]
     players_b, ball_b, team_b = bro["players"] * scale, bro["ball"] * scale, bro["team"]
-    graded = frame_mask("tactical", players)
+    graded = frame_mask(list(half_video_blocks(GAME)), players)
 
     offset = np.load(OFFSETS)["offset"]
     b_to_t = np.where(offset >= 0, np.arange(len(offset)) + offset, -1)

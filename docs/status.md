@@ -53,7 +53,7 @@ docs/research.md. Updated 2026-10-25.
 | Step | What | Done when |
 |---|---|---|
 | A | Data audit (tracking, Smart Tagging, broadcast alignment, confirmation by second tracker) | ✅ 2026-10-25 |
-| B | Open data: download DFL + Metrica (✅ downloaded, hash-checked), convert to H/A/D, add our tracker's faults | a ~10-match damage test runs |
+| B | Open data: ✅ downloaded and hash-checked; ✅ loaded with H/A/D labels (`possession/external.py`); ✅ control audit; next: add our tracker's faults, 8-match damage test | an 8-match damage test runs |
 | C | v2: clean-up (motionless ghosts, cap 11, ball jumps) + restart detector + possession logic | beats v1 on the new test |
 | D | Decoder (HMM/Viterbi) over v2's clues | beats v2 |
 | E | Audio: whistle detector, then commentary (Whisper + small local LLM) | each clue helps, or is dropped |

@@ -239,6 +239,30 @@ broadcast, so the weaker findings above can be tested against an independent tra
 | Is "clear control", the yardstick used on Smart Tagging, trustworthy? | When both trackers see clear control they agree on the team **97.2%** | **Confirmed**; Smart Tagging percentages are good to a few points |
 | Do they agree on where the ball is? | median 0.76 m apart, but **> 5 m apart on 10.5%** of frames where both have a ball (> 15 m on 2.2%) | **New finding**: one of them has a wrong ball on ~1 frame in 10. Which one is open |
 
+### Control: the same audit on 8 clean matches (DFL ×7, Metrica Game 3)
+
+`python scripts/audit_tracking.py --source dfl-J03WMX` etc. Whatever the audit reports on clean,
+professionally collected tracking is its own false-alarm level.
+
+| Measure | Our match | Clean matches | Verdict |
+|---|---|---|---|
+| frames with 12+ objects in a team | home 8.1%, away 4.7% | 0% | **real** |
+| frames with fewer than 18 objects | 9.2% | 0% | **real**: players go missing |
+| long touchline tracks | 33 | 0 | **real** (harmless) |
+| ghost deepest in a box, ball far away | 3,381 frames | 0–314 | **real** |
+| player speed column lag | 7 frames | 0–3 | **real** |
+| "perfectly straight" player seconds | 6.0% | 1.9–4.5% | **mostly a false alarm**; excess ~2–3% |
+| one-frame identity jumps | 0–0.3 per min | 0.1–0.7 per min | normal |
+| ball moves > 2 m in a frame | 119 | Metrica 106 | normal |
+| "perfectly straight" ball seconds | 0.4% | Metrica **37.6%**, DFL 0–0.3% | our ball is *not* filled in with straight lines; the test does catch it where it happens (Metrica) |
+| ball gaps of 1–5 s | 1 | Metrica 16 (DFL never loses the ball) | our missing short gaps are unusual; cause still open |
+| no own object in the box, ball far away | thousands | thousands | meaningless: keepers step out of the box |
+
+The audit also found that DFL records speed in km/h (exactly 3.6× speed from positions); the
+loader converts it. DFL's labels give dead ball at **41–52%** of each match, which confirms the
+"40–45% dead" estimate from published ball-in-play figures. Metrica's event-derived labels give
+27%, because events mark stoppages less completely than a tracking flag does.
+
 ### Smart Tagging, checked against the tracking (not against any answers)
 
 - **Team tags are good in open play, weak near the box.** Tagged team in clear control

@@ -19,6 +19,10 @@ Sections:
 
     python scripts/audit_tracking.py                      # tactical, graded halves
     python scripts/audit_tracking.py --source broadcast   # broadcast, frames with play in view
+    python scripts/audit_tracking.py --source dfl-J03WMX  # another match, as a control
+
+Run on the clean open-data matches (possession/external.py) it is a control: faults it reports
+there are the audit's own false alarms, so the same numbers on our match are not real faults.
 
 Prints aggregates only: counts, shares, percentiles. Never a frame, a row or one object's path.
 """
@@ -32,9 +36,10 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
-from games import GAME, GAMES, half_video_blocks  # noqa: E402
+from games import GAME, GAMES  # noqa: E402
 
-from possession.tracking import PITCH, load_tracking  # noqa: E402
+from possession.external import load_source, sources  # noqa: E402
+from possession.tracking import PITCH  # noqa: E402
 
 # Params
 FPS = GAMES[GAME]["fps"]
@@ -65,12 +70,12 @@ def runs(mask):
     return np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)
 
 
-def frame_mask(source, players):
-    """Frames to audit: the graded halves on tactical, frames with play in view on broadcast."""
-    n = len(players)
-    if source == "tactical":
-        mask = np.zeros(n, dtype=bool)
-        for _, first, last in half_video_blocks(GAME):
+def frame_mask(halves, players):
+    """Frames to audit: inside the halves where they are known (graded halves on tactical), else
+    frames with play in view (broadcast, which has no halves on its own timeline)."""
+    if halves:
+        mask = np.zeros(len(players), dtype=bool)
+        for _, first, last in halves:
             mask[first:last + 1] = True
         return mask
     return (~np.isnan(players[:, :, 0])).sum(axis=1) >= MIN_OBJECTS_IN_VIEW
@@ -231,6 +236,8 @@ def ball_check(ball, players, mask):
                            pct(lengths[short].sum() / lengths.sum())))
     gap_starts, gap_stops = runs(~seen & mask)
     gaps = (gap_stops - gap_starts) / FPS
+    if not len(gaps):
+        gaps = np.array([0.0])  # the ball is never missing (clean data)
     print("  missing runs: {:,}; shortest {:.2f} s; p10/p50/p90 {:.1f} / {:.1f} / {:.1f} s".format(
         len(gaps), gaps.min(), *np.percentile(gaps, [10, 50, 90])))
     edges = [0, 1, 2, 5, 10, 20, 60, np.inf]
@@ -273,19 +280,21 @@ def coverage(players, ball, present, mask):
     print("  " + " | ".join(cells))
 
 
-def sides(players, present, team, ball, source):
+def sides(players, present, team, ball, halves):
     print("\n8 SIDES AND KEEPERS")
-    if source != "tactical":
-        print("  skipped: halves are only known on the tactical timeline")
+    if not halves:
+        print("  skipped: no halves on this timeline")
         return
-    for half, first, last in half_video_blocks(GAME):
+    for half, first, last in halves:
         rows = slice(first, last + 1)
         p, pr, b = players[rows], present[rows], ball[rows]
         mean_x = {code: np.nanmean(p[:, team == code, 0]) for code in (HOME, AWAY)}
         print("  half {}: mean x home {:.1f} m, away {:.1f} m".format(half, mean_x[HOME],
                                                                      mean_x[AWAY]))
         for code in (HOME, AWAY):
-            goal_x = 0.0 if mean_x[code] < LENGTH / 2 else LENGTH  # each team defends its own end
+            # Each team defends the end it sits nearer to, relative to the other team: an
+            # absolute halfway test fails when one side camps in the other half for a whole half.
+            goal_x = 0.0 if mean_x[code] < mean_x[1 - code] else LENGTH
             depth = np.abs(p[:, :, 0] - goal_x)
             in_box = (depth <= BOX_DEPTH) & (np.abs(p[:, :, 1] - WIDTH / 2) <= BOX_HALF_WIDTH) & pr
             ball_far = np.abs(b[:, 0] - goal_x) > FAR_BALL  # NaN ball -> False: not judged
@@ -320,14 +329,17 @@ def pairs(players, present, team, mask):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--source", default="tactical", choices=("tactical", "broadcast"))
+    parser.add_argument("--source", default="tactical", choices=sources())
     args = parser.parse_args()
 
-    t = load_tracking(args.source)
-    scale = np.array(PITCH)
+    t = load_source(args.source)
+    LENGTH, WIDTH = t["pitch"]  # the module-level pitch every section uses
+    X_BINS = np.arange(0, LENGTH + 15, 15.0)
+    scale = np.array(t["pitch"])
     players, ball = t["players"] * scale, t["ball"] * scale  # metres from here on
     present = ~np.isnan(players[:, :, 0])
-    mask = frame_mask(args.source, players)
+    halves = t.get("halves")
+    mask = frame_mask(halves, players)
     print("{}: {:,} frames audited ({:.1f} min), {} track slots".format(
         args.source, int(mask.sum()), mask.sum() / FPS / 60, len(t["team"])))
 
@@ -341,5 +353,5 @@ if __name__ == '__main__':
         invented(players, ball, mask)
         ball_check(ball, players, mask)
         coverage(players, ball, present, mask)
-        sides(players, present, t["team"], ball, args.source)
+        sides(players, present, t["team"], ball, halves)
         pairs(players, present, t["team"], mask)

@@ -11,6 +11,15 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-25 · Open data loaded; control audit on 8 clean matches
+
+- DFL (7) and Metrica Game 3 load into our arrays with an H/A/D label per frame. DFL's dead-ball
+  share is 41–52%: our v1 (32%) and the baselines likely call too little D.
+- Run on clean data, the audit confirms our extra objects, missing players, touchline tracks,
+  box ghost and speed-column lag as real, and shows the "filled-in player paths" finding was
+  mostly the test's own false-alarm rate.
+
+
 ### 2026-10-25 · Confirmation with the broadcast tracker as a second witness
 
 - **Corrected:** the "keeper mix-up" is a motionless ghost reusing the Athletic keeper's track
