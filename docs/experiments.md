@@ -12,6 +12,31 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Ball-gap rules, and where v2 loses its points
+
+**Gap clues on the practice matches** (2,252 gaps, 3 damage scenarios): a gap whose ball comes
+back within 3 m of where it vanished is 98% dead (3–8 m: 80%; 30 m+: 25%); team speed below 65%
+of the match's typical speed is 98% dead, above 100% only 16%. v2's gap rule is right on 74% of
+gaps (catches 91% of stoppages, keeps only 49% of live gaps live); adding "came back within 5 m
+after 3 s+ → dead" and dropping the 20 s rule: 83% right (91% / 71%).
+
+**But the practice score barely moves:** v2 0.312, v2_return 0.313, v2_return_nolong 0.311
+(dead share falls to 38%). Gap calls are not where the points are.
+
+**Where the points are** (oracle swaps, damaged practice matches, practice score):
+
+| | score |
+|---|---|
+| v2 | 0.309 |
+| v2 with the true stoppages | 0.396 |
+| v2 with the true team in live play | **0.722** |
+| both true | 1.000 |
+
+The team call in live play (nearest player + ±2 s vote) costs about four times what the stoppage
+calls cost. Next: possession logic from Link & Hoernig 2017 (backlog M7). v2 stays unchanged;
+`near_return` stays as an option (`v2_return`).
+
+
 ### 2026-10-25 · v2: stoppages from ball position and play speed
 
 Clues measured on the open-data matches first (`possession/stoppages.py` docstring has the

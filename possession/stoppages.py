@@ -45,6 +45,8 @@ STILL_FOR = 2 * FPS       # frames
 BALL_SMOOTH = 12          # +/- frames for the ball speed
 MIN_GAP = FPS             # 1 s
 LONG_GAP = 20 * FPS       # as v1
+NEAR_RETURN = 5.0         # m: a gap whose ball comes back this close to where it vanished ...
+NEAR_RETURN_MIN = 3 * FPS # ... and lasts this long is a stoppage (98% of 0-3 m returns are dead)
 SLOW_SHARE = 0.65         # of the median team speed while the ball is in view
 SPEED_WINDOW = 50         # +/- 2 s smoothing of the team speed
 CORNER, TOUCHLINE = 5.0, 3.0   # m
@@ -86,7 +88,7 @@ def runs(mask):
 RULES = ("out", "still", "gaps")
 
 
-def dead_mask(tracking, rules=RULES):
+def dead_mask(tracking, rules=RULES, slow_share=SLOW_SHARE, long_gap=LONG_GAP, near_return=0.0):
     pitch = np.array(tracking.get("pitch", PITCH))
     ball = tracking["ball"] * pitch
     n = len(ball)
@@ -105,12 +107,14 @@ def dead_mask(tracking, rules=RULES):
     if "gaps" not in rules:
         return dead
     team_speed = windowed_mean(np.nanmean(tracking["speed"], axis=1).astype(float), SPEED_WINDOW)
-    slow = SLOW_SHARE * np.nanmedian(team_speed[seen])
+    slow = slow_share * np.nanmedian(team_speed[seen])
     for a, b in missing_runs(tracking["ball"]):
         if b - a < MIN_GAP:
             continue
         edge = (a > 0 and at_edge(ball[a - 1], pitch)) or (b < n and at_edge(ball[b], pitch))
-        if b - a >= LONG_GAP or edge or np.nanmean(team_speed[a:b]) < slow:
+        returned = near_return > 0 and a > 0 and b < n and b - a >= NEAR_RETURN_MIN and \
+            np.linalg.norm(ball[b] - ball[a - 1]) < near_return
+        if b - a >= long_gap or edge or returned or np.nanmean(team_speed[a:b]) < slow:
             dead[a:b] = True
     return dead
 
@@ -141,7 +145,8 @@ def vote_within_live(codes, dead, window):
     return team
 
 
-def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False, precise=False):
+def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False, precise=False,
+            **gap_options):
     """H/A/D per frame. rules / clean / live_vote / precise switch parts on and off, to measure
     what each adds. precise=True runs possession.precise (which includes the clean-up)."""
     if precise:
@@ -149,7 +154,7 @@ def predict(tracking, frames=None, rules=RULES, clean=True, live_vote=False, pre
     elif clean:
         tracking = cleanup.clean(tracking)
     codes = baseline.nearest_team(tracking["players"], tracking["ball"], tracking["team"], frames)
-    dead = tidy(dead_mask(tracking, rules))
+    dead = tidy(dead_mask(tracking, rules, **gap_options))
     team = vote_within_live(codes, dead, VOTE_WINDOW) if live_vote \
         else vote_with_hold(codes, VOTE_WINDOW)
     labels = np.where(team == HOME, "H", "A").astype("<U1")
