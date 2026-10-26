@@ -37,6 +37,9 @@ from possession.tracking import PITCH
 REACH = 1.0            # m
 DUEL = 1.0             # m
 CONTROL_FRAMES = 3     # 0.12 s
+TOUCH_DV = 3.0         # m/s change in ball velocity that marks a touch
+TOUCH_SPAN = 3         # frames either side over which the change is measured
+PASS_BY = 8.0          # m/s: a ball faster than this past a player is not held by him
 HOME, AWAY, NOBODY = 0, 1, -1
 
 
@@ -67,12 +70,57 @@ def control_events(dist, reach=REACH, duel=DUEL, frames=CONTROL_FRAMES):
     return events
 
 
+def ball_velocity(ball_m):
+    """(n, 2) m/s from the move between t-2 and t+2; NaN at the edges and around gaps."""
+    v = np.full(ball_m.shape, np.nan)
+    v[2:-2] = (ball_m[4:] - ball_m[:-4]) * 25 / 4
+    return v
+
+
+def control_events_touch(dist, ball_m, reach=REACH, duel=DUEL, frames=CONTROL_FRAMES,
+                         dv=TOUCH_DV, pass_by=PASS_BY, k=TOUCH_SPAN):
+    """Control by touch or by hold (deep dive 1, docs/deep-dives/01-ball-travelling.md).
+
+    Deep dive 1 found v3's 3-frame hold misses a third of true changes (a one-touch pass is a
+    possession in the answers) and invents changes when a fast pass zips past an opponent (median
+    9.6 m/s). Vidal-Codina et al.: a gain of possession needs the ball to change direction or
+    speed near the player; Link & Hoernig: a touch is a sudden change in the ball's motion. So:
+      touch  the ball's velocity changes by at least dv m/s between t-k and t+k while one team's
+             player is within reach and no opponent within duel: control from that frame, even
+             if brief
+      hold   the candidate team keeps the ball within reach for `frames` frames while it moves
+             slower than pass_by m/s (the ball travels with the player, not past him)
+    """
+    home = (dist[:, 0] < reach) & (dist[:, 1] >= duel)
+    away = (dist[:, 1] < reach) & (dist[:, 0] >= duel)
+    candidate = np.where(home, HOME, np.where(away, AWAY, NOBODY)).astype(np.int8)
+    v = ball_velocity(ball_m)
+    speed = np.linalg.norm(v, axis=1)
+    change = np.full(len(v), np.nan)
+    change[k:-k] = np.linalg.norm(v[2 * k:] - v[:-2 * k], axis=1)
+    events = np.full(len(candidate), NOBODY, dtype=np.int8)
+    touch = (candidate != NOBODY) & (change >= dv)
+    events[touch] = candidate[touch]
+    starts = np.flatnonzero(np.diff(np.concatenate(([NOBODY - 1], candidate))) != 0)
+    stops = np.concatenate((starts[1:], [len(candidate)]))
+    for a, b in zip(starts, stops):
+        if candidate[a] != NOBODY and b - a >= frames and np.nanmedian(speed[a:b]) < pass_by:
+            events[a] = candidate[a]
+    return events
+
+
 def team_by_control(tracking, dead, codes, reach=REACH, duel=DUEL, frames=CONTROL_FRAMES,
-                    vote_window=50):
-    """HOME/AWAY per frame for live play (dead frames get a placeholder the caller overwrites)."""
-    dist = team_distances(tracking["players"], tracking["ball"], tracking["team"],
-                          tracking.get("pitch", PITCH))
-    events = control_events(dist, reach, duel, frames)
+                    vote_window=50, touch=False, dv=TOUCH_DV, pass_by=PASS_BY):
+    """HOME/AWAY per frame for live play (dead frames get a placeholder the caller overwrites).
+    touch=True uses control_events_touch (control by touch or slow hold) instead of the plain
+    3-frame hold."""
+    pitch = tracking.get("pitch", PITCH)
+    dist = team_distances(tracking["players"], tracking["ball"], tracking["team"], pitch)
+    if touch:
+        events = control_events_touch(dist, tracking["ball"] * np.array(pitch), reach, duel,
+                                      frames, dv, pass_by)
+    else:
+        events = control_events(dist, reach, duel, frames)
     fallback = vote_with_hold(codes, vote_window)
     team = fallback.copy()
     edges = np.diff(np.concatenate(([0], (~dead).astype(np.int8), [0])))

@@ -49,7 +49,7 @@ GROUP_SIZE = 10
 MARGIN = 2 * FPS          # frames away from any change of v3's label
 WIDTH = 1280              # frames are scaled down to this width before the model sees them
 CROP_W, CROP_H = 640, 360 # pixels of the 1920x1080 frame around the action
-CROP_SCALE = 960          # width the crop is scaled to
+CROP_SCALE = 768          # width the crop is scaled to (3 images must fit the context)
 SEQUENCE_STEP = FPS       # frames between the images of a sequence
 SEED = 0
 TIMEOUT = 300             # s per question before giving up
@@ -97,7 +97,7 @@ def ask(jpegs, model, prompt):
     body = json.dumps({"model": model, "prompt": prompt,
                        "images": [base64.b64encode(j).decode() for j in jpegs],
                        "format": SCHEMA, "stream": False, "think": False,
-                       "options": {"temperature": 0, "seed": SEED, "num_ctx": 2048}}).encode()
+                       "options": {"temperature": 0, "seed": SEED, "num_ctx": 4096}}).encode()
     request = urllib.request.Request(URL, data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
