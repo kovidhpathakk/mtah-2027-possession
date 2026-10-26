@@ -4,7 +4,11 @@
 #
 #     /usr/bin/python3 -m venv .venv-video
 #     .venv-video/bin/pip install -r requirements-video.txt
-numpy==2.0.2
+numpy==1.26.4  # ultralytics 8.3.40 installs this; the main .venv keeps numpy 2.0.2
 pandas==2.3.3
 torch==2.5.1
 torchvision==0.20.1
+# Football-trained detectors (track T): Roboflow "sports" YOLOv8 models, trained on the DFL
+# Bundesliga Data Shootout footage (not our match). Ultralytics is AGPL-3.0.
+ultralytics==8.3.40
+gdown==5.2.0

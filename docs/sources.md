@@ -34,6 +34,8 @@ Both are fetched and checksum-verified by `scripts/fetch_open_data.py`.
 | Ollama + Qwen3-VL 4B | model id a1b29c246319 | vision pilot (blocked by memory; parked) |
 | PyTorch 2.5.1 + torchvision 0.20.1, Faster R-CNN ResNet-50 FPN v2 (COCO) | `requirements-video.txt` | video audit (people and ball) |
 | ffmpeg | Homebrew | frames, audio extraction |
+| Ultralytics 8.3.40 (AGPL-3.0) | `requirements-video.txt` | to run football-trained YOLO detectors (track T); weights not yet downloaded |
+| Roboflow "sports" football detectors (YOLOv8: ball, players) | [github.com/roboflow/sports](https://github.com/roboflow/sports) (MIT); trained on DFL Bundesliga Data Shootout footage | chosen for track T; download pending a decision (pickle weights from Google Drive) |
 
 None of these is part of the submission pipeline yet (`run.py` needs numpy and pandas only).
 

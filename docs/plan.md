@@ -49,7 +49,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | Step | Experiment | Rows | Status |
 |---|---|---|---|
 | T0 | **Realism report**: our match vs damaged practice on every measure, flagging gaps | P1d | ✅ 17 of 18 measures within 1.5× after copying missing-player episodes |
-| T1 | **Football-trained detector pilot** (~200 frames): speed per frame, how often it finds the ball where the provided track has one, and where it has none | V9, T1 | next (runs alone) |
+| T1 | **Football-trained detector pilot** (~200 frames): speed per frame, how often it finds the ball where the provided track has one, and where it has none | V9, T1 | **blocked: needs Kovidh's decision.** Chosen model: Roboflow "sports" YOLOv8 ball and player detectors (trained on DFL Bundesliga Data Shootout footage; repo MIT; Ultralytics AGPL-3.0 installed). Downloading the weights (`.pt` pickles from Google Drive, which can run code when loaded) was refused by the safety check. Rejected alternative: soccana (YOLOv11), training sources and licence unstated |
 | T2 | **Confirm the smoothing from the video**: detector on runs of consecutive frames around kicks; compare the real ball's speed changes with the recorded ones | V17 | with T1 |
 | T3 | If fast and accurate: **our own ball track** for every graded frame (detector + homography + a simple tracker joining detections), overnight | T3 | after T1 |
 | T4 | v4's touch rule and the trained models on our own ball track | T4 | after T3 |
