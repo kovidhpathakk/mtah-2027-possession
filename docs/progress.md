@@ -16,7 +16,7 @@ Last updated: 2026-10-26.
 |---|---|
 | **Best model** | **v5** (new candidate): practice **0.430** on the realistic kit (v4 0.279 on the same damaged copies; baseline 0.229 here vs its real 0.243). Realistic expectation on the real match: around 0.4 (practice sits within ~0.015 of the real score for the baseline) |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v4.csv` and `ours_v5.csv` also valid |
-| **Working on** | After v5: where the points are now (stoppages vs team call), and why v5 makes fewer possessions than the truth |
+| **Working on** | Next: learned stoppages (deep dive 4, now worth up to +0.17), then v5's missing possessions |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Docs** | `docs/README.md` maps every file |
 | **Deadline** | 17 November 2026 |
@@ -304,6 +304,10 @@ with swap).
    ball. That stays readable when the ball is smoothed or missing, our tracker's weak spots.
    **Watch:** v5 makes fewer possessions than the truth (practice 3.4 vs 4.5 a minute; our match
    2.8 vs ~3.4).
+10. **Where the points are after v5:** perfect stoppages would now add **+0.17** (they added +0.09
+   on top of v4: better team calls stop hiding stoppage errors), a perfect team call +0.29. The
+   missing possessions are a team-call matter. So the stoppages come next, with the same machinery
+   as v5: a model trained on the practice matches instead of hand rules.
 
 ### Stage 9 · Can we make better tracking from the video? (Oct 26)
 

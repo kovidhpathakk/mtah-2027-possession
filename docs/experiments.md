@@ -62,6 +62,18 @@ possessions; on practice that costs less than v4's flicker. Next to study.
 **Transfer to our match.** Mean confidence max(p, 1-p) on our match's live frames 0.904, unsure
 (0.3-0.7) 11%: the same as on practice (0.88-0.91, 11-16%).
 
+**Where the points are now** (`--oracle`, damage seed 2):
+
+| What-if | practice | possessions/min |
+|---|---|---|
+| v5 | 0.429 | 3.37 |
+| v5 + true stoppages (team decoded within the true live stretches) | 0.601 (+0.17) | 3.15 |
+| v5's stoppages + true team in live play | 0.719 (+0.29) | 4.57 |
+| truth | 1.000 | 4.53 |
+
+With v4's team call, perfect stoppages were worth +0.09; on top of v5 they are worth +0.17. The
+missing possessions are a team-call matter (true team gives 4.57 a minute, true stoppages 3.15).
+
 **Reproducible.** Two fits on the same rows give identical probabilities; `run.py --method v5`
 from an empty cache (rows and model retrained, 1 min 50 s) gives the same bytes as from the cache.
 

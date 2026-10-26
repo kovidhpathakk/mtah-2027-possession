@@ -105,7 +105,7 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | Video (tactical) | **football-trained detector** finds the ball in those frames (it was visible in ~2/3 of gap frames) | V2, V6, V9 |
 | Video (broadcast) | close-up camera often still shows the ball when the wide view loses it (needs re-download) | V10 |
 
-### Deep dive 4: stoppage edges (when play stops and restarts; worth up to +0.08)
+### Deep dive 4: stoppage edges (when play stops and restarts; worth up to +0.17 on top of v5): **next**
 
 | Track | Experiment | Rows |
 |---|---|---|
@@ -155,13 +155,13 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | M14 | Visible-ball stoppages where the ball is carried, not still | v2 weaknesses | planned | e.g. walking to a throw-in |
 | M15 | **Learned team call**: gradient-boosted trees over 59 tracking clues trained on the damaged practice matches' per-frame possession (idea from Borghesi et al. 2023), both teams' views, Viterbi decoding | research 2026-10-26 | **done → v5** | practice 0.430 vs v4 0.279 (fresh seeds); `scripts/learned_test.py`; model.md step 4 |
 | M16 | **Ball-free possession and events** with a CRF/Viterbi over player-to-player paths, as in PathCRF (arXiv 2602.12080, KDD'26) | research 2026-10-26 | planned | targets live play with the ball missing, and fits the decoder (M12) |
-| M18 | **Learned stoppage classifier** trained on the practice matches (gap length, where the ball vanished and returned, team speed, still ball, restart shapes, team shape) vs v2's hand rules | deep dive 4 | planned | reuse v5's machinery (`possession/learned.py`) with D as a third answer |
+| M18 | **Learned stoppage classifier** trained on the practice matches (gap length, where the ball vanished and returned, team speed, still ball, restart shapes, team shape) vs v2's hand rules | deep dive 4 | **next** | worth up to +0.17 on top of v5 (oracle 2026-10-26); reuse v5's machinery (`possession/learned.py`) with D as a third answer |
 | M19 | **Learned control classifier** trained on DFL's true possession changes, with Link & Hoernig's features (duration, ball speed and acceleration, opponents within 0.5-5 m) | Link & Hoernig 2017 | folded into M15 | the control events and distance windows are v5 clues |
 | M20 | End-of-possession rule: possession ends when no teammate can reach the ball's predicted position within 1 s | Link & Hoernig 2017 | next (dive 1) | |
 | M21 | Team-shape clue for who has the ball (advancing open shape vs retreating compact shape; share goal-side of the ball), learned on DFL | tactics literature | done inside M15 | the strongest v5 clue: shuffling it costs 17 points of accuracy |
 | M22 | Decoder statistics learned from DFL: possession and stoppage length distributions, switch rates | our design | planned (decoder) | |
 | M23 | **Restart detector from player positions** (throw-in taker beyond the touchline, corner taker at the flag, keeper in the goal area, kickoff formation); taker's team gets the ball | Vidal-Codina 2022 | next (dive 2) | |
-| M25 | **v5 possession count**: v5 makes fewer possessions than the truth (practice 3.4 vs 4.5 a minute; our match 2.8 vs ~3.4 in the public window). Find which true possessions it merges (length, situation) and try a duration-aware decoder or a learned change-point model | v5 results 2026-10-26 | next | |
+| M25 | **v5 possession count**: v5 makes fewer possessions than the truth (practice 3.4 vs 4.5 a minute; our match 2.8 vs ~3.4 in the public window). Find which true possessions it merges (length, situation) and try a duration-aware decoder or a learned change-point model | v5 results 2026-10-26 | next after M18 | the oracle puts the gap in the team call (true team: 4.57 a minute) |
 | M26 | **v5 model upgrades**: more damaged copies per match, hyperparameters, per-player clues (the receiver's speed and turn), a sequence model (TCN, Borghesi 2023) over the clues | v5 results 2026-10-26 | planned | practice matches only; leave-one-match-out |
 | M8c | Smart Tagging team tags as weighted evidence in the decoder (not a hard override) | deep dive 1 | planned | |
 | M8d | Phase-level check: v4 contradicting an entire high-trust Smart Tagging phase | deep dive 1 | planned | |
