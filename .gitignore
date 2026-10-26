@@ -66,3 +66,6 @@ env/
 
 # -- local models (Whisper, LLMs): downloaded by scripts, never committed --------------------------
 models/
+
+# -- downloaded third-party code (read before running; never committed) -------------------------
+third_party/
