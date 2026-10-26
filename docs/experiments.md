@@ -25,6 +25,9 @@ episodes; damaged practice gives 7.7%. Remaining flag: ball gaps of 1-5 s per ho
 practice 1.1; one gap in our whole match). Also visible: the ball is a little further from the
 nearest player in damaged practice (median 2.4 m vs 1.8 m; within 1 m 23% vs 29%).
 
+Practice scores after the fix (stable within 0.002): baseline 0.237 (real 0.243), smooth25 0.219,
+smooth125 0.186, raw 0.086, v1 0.257, v2 0.271, v3 0.290, v4 0.286.
+
 
 ### 2026-10-26 · Realistic (smoothed) practice ball: the touch rule's gain disappears
 
