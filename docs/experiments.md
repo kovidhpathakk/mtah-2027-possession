@@ -13,6 +13,25 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Harder, more honest practice damage
+
+Added the two faults the kit lacked, at our match's measured rates: team-label swaps on 1.8% of
+object-frames (4× likelier in a box) and the ball 5–15 m off on ~3.5% of visible frames.
+Practice score (mean of stoppage / mixed / random):
+
+| Method | practice | real full match |
+|---|---|---|
+| baseline | 0.248 | 0.243 |
+| baseline_smooth25 | 0.233 | 0.200 |
+| baseline_smooth125 | 0.190 | 0.224 |
+| baseline_raw | 0.082 | 0.049 |
+| blackout_v1 | 0.269 | – |
+| v2 | 0.284 | – |
+| **v3** | **0.352** | – |
+
+The practice score of the published floor now sits within 0.005 of its real full-match score.
+
+
 ### 2026-10-26 · Commentary does not track possession
 
 Transcript: 2,389 lines after the loop fix (98% distinct, 26% name a team or a one-team player).

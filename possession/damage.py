@@ -25,6 +25,14 @@ Faults:
   extra         a near-duplicate of a player, on our share of frames with 12+ in a team
   ghost         a motionless away-labelled object in front of the home goal, GHOST_FRAMES frames
   speed lag     the speed column delayed by SPEED_LAG frames
+  team swaps    a player carried under the other team's label for 1-10 s, on TEAM_SWAP_SHARE of
+                object-frames, BOX_WEIGHT times likelier inside a penalty box. Our two trackers
+                give the same person different teams on 1.8% of matched objects, 5.1% in the
+                boxes (audit_confirm.py).
+  ball errors   the ball 5-15 m from where it is, for 1-3 s, on BALL_ERROR_SHARE of visible
+                frames. Our two trackers' balls are > 5 m apart on 10.5% of frames, and where the
+                video could decide, our tactical tracker was the wrong one about 1 time in 3
+                (video_audit.py: 11 of 34): ~3.5%.
 
     from possession.damage import our_profile, damage
     profile = our_profile()
@@ -51,6 +59,13 @@ GHOST_FRAMES = 3381           # audit_confirm.py, our match
 GHOST_RUNS = 22               # in this many stretches
 GHOST_DEPTH = 4.0             # m in front of the goal line
 SPEED_LAG = 7                 # frames, audit_tracking.py
+TEAM_SWAP_SHARE = 0.018       # of object-frames
+BOX_WEIGHT = 4                # swaps this many times likelier in a box (5.1% vs 1.2%)
+SWAP_RUN = (1, 10)            # s
+SWAP_SLOTS = 2                # per team
+BALL_ERROR_SHARE = 0.035      # of visible ball frames
+BALL_ERROR_RUN = (1, 3)       # s
+BALL_ERROR_SIZE = (5.0, 15.0) # m
 HOME, AWAY = 0, 1
 
 
@@ -136,6 +151,12 @@ def damage(t, scenario, rng, profile):
 
     ball = t["ball"] + _smooth_noise(len(t["ball"]), rng) / pitch
     ball[_ball_gaps(labels, graded, scenario, profile, rng)] = np.nan
+    seen = graded & ~np.isnan(ball[:, 0])
+    wrong = _cover(BALL_ERROR_SHARE * seen.sum(), BALL_ERROR_RUN, seen, rng)
+    for a, b in _runs(wrong):
+        angle = rng.uniform(0, 2 * np.pi)
+        size = rng.uniform(*BALL_ERROR_SIZE)
+        ball[a:b] += np.array([np.cos(angle), np.sin(angle)]) * size / pitch
     out["ball"] = ball
 
     # Missing players: a few at a time, for a few seconds.
@@ -168,11 +189,41 @@ def damage(t, scenario, rng, profile):
         ghost = _cover(GHOST_FRAMES / len(t["halves"]),
                        (GHOST_FRAMES / GHOST_RUNS / FPS,) * 2, far, rng)
         extra[ghost, 2] = spot
-    out["players"] = np.concatenate([players, extra], axis=1)
-    out["team"] = np.concatenate([t["team"], extra_team])
+    # Team swaps: the player moves into a spare slot of the other team for the run.
+    swap = np.full((n, 2 * SWAP_SLOTS, 2), np.nan)
+    swap_speed = np.full((n, 2 * SWAP_SLOTS), np.nan, dtype=np.float32)
+    swap_team = np.array([HOME] * SWAP_SLOTS + [AWAY] * SWAP_SLOTS, dtype=np.int8)
+    metres = players * pitch
+    in_box = (np.fmin(metres[:, :, 0], pitch[0] - metres[:, :, 0]) <= 16.5) & \
+        (np.abs(metres[:, :, 1] - pitch[1] / 2) <= 20.16)
+    target = TEAM_SWAP_SHARE * (~np.isnan(players[graded, :, 0])).sum()
+    candidates = np.flatnonzero(graded)
+    moved, tries = 0, 0
+    while moved < target and tries < 100000:
+        tries += 1
+        a = int(rng.choice(candidates))
+        on = np.flatnonzero(~np.isnan(players[a, :, 0]))
+        if not len(on):
+            continue
+        slot = int(rng.choice(on))
+        if not in_box[a, slot] and rng.random() > 1 / BOX_WEIGHT:
+            continue
+        b = min(n, a + int(rng.uniform(*SWAP_RUN) * FPS))
+        spares = np.flatnonzero(swap_team != t["team"][slot])
+        free = [k for k in spares if np.isnan(swap[a:b, k, 0]).all()]
+        if not free:
+            continue
+        k = free[0]
+        swap[a:b, k] = players[a:b, slot]
+        swap_speed[a:b, k] = t["speed"][a:b, slot]
+        players[a:b, slot] = np.nan
+        moved += int((~np.isnan(swap[a:b, k, 0])).sum())
 
-    speed = np.concatenate([t["speed"], np.zeros((n, 3), dtype=np.float32)], axis=1)
-    speed[:, slots:][np.isnan(extra[:, :, 0])] = np.nan
+    out["players"] = np.concatenate([players, extra, swap], axis=1)
+    out["team"] = np.concatenate([t["team"], extra_team, swap_team])
+
+    speed = np.concatenate([t["speed"], np.zeros((n, 3), dtype=np.float32), swap_speed], axis=1)
+    speed[:, slots:slots + 3][np.isnan(extra[:, :, 0])] = np.nan
     speed[np.isnan(out["players"][:, :, 0])] = np.nan
     lagged = np.full_like(speed, np.nan)
     lagged[SPEED_LAG:] = speed[:-SPEED_LAG]

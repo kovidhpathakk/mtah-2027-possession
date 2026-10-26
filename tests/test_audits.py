@@ -149,8 +149,8 @@ class Damage(unittest.TestCase):
             self.assertGreaterEqual(missing, 0.4, scenario)
             self.assertLess(missing, 0.6, scenario)
             self.assertIs(out["labels"], self.t["labels"])
-            self.assertEqual(out["players"].shape[1], 25)
-            self.assertEqual(len(out["team"]), 25)
+            self.assertEqual(out["players"].shape[1], 25 + 2 * damage_kit.SWAP_SLOTS)
+            self.assertEqual(len(out["team"]), 25 + 2 * damage_kit.SWAP_SLOTS)
             self.assertTrue(np.isnan(out["speed"][:damage_kit.SPEED_LAG]).all())
 
 

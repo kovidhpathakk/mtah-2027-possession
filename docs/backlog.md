@@ -8,6 +8,26 @@ Status: `done` · `now` · `next` (in order) · `planned` · `parked` (decided t
 
 Last updated: 2026-10-26.
 
+## Order of work (reordered 2026-10-26)
+
+The logic: **make the test honest first** (everything is measured on it), **research before
+building** the biggest lever, **team-call work before stoppage work** (perfect team calls are worth
++0.36 on practice, perfect stoppages +0.08), **clues before the decoder** that combines them, and
+long jobs in the background whenever the machine is free.
+
+| Step | Backlog rows | Why here |
+|---|---|---|
+| 1 | P1b: missing faults in the practice damage | ✅ done. Practice baseline now 0.248 vs its real 0.243 |
+| 2 | V3: vision-model pilot (30 frames) | running in the background; decides whether V3 is worth a full run |
+| 3 | M17: focused research pass (Borghesi TCN, PathCRF, how DFL defines possession, pass/reception detection, whistle detection) | shapes steps 4-5 and 8 before we build them |
+| 4 | M7b: possession part 2, for passes and loose balls (59% of live play, 16% wrong) | the largest pile of team errors |
+| 5 | M15: learned possession model trained on DFL | may beat or absorb step 4; compared on practice |
+| 6 | M10: who restarts (first 3 s after a stoppage: 23% wrong) | second-largest team error |
+| 7 | V2 / V6: detector finds the ball in live-play gaps (5.3 min of our match), overnight | ball missing in live play: 28% wrong |
+| 8 | Stoppage clues: S4 whistles, M8 precise Smart Tagging, M9 imitation clues, S3c commentary for rare stoppages, V3 if the pilot works | each one tested on practice through the imitation clues |
+| 9 | M12 decoder (with M16 PathCRF ideas, M11 Ball Radar-lite) | combines every clue above |
+| 10 | P3-P7: merge organiser docs, reproducible pipeline, clean-up, technical document, submit by ~15 Nov | |
+
 ## Model
 
 | # | Idea | Source | Status | Notes |
@@ -41,7 +61,7 @@ Last updated: 2026-10-26.
 | S3b | Commentary player names → team, without the LLM | done | 55–58% vs 52–54% chance: commentators don't narrate who has the ball; Barça named 3× as often as Athletic |
 | S3c | Commentary as a clue for rare long stoppages (goals, injuries, VAR, subs) | planned (low weight, in the decoder) | |
 | S3d | A bigger local LLM on the commentary | parked | the name test says the information isn't in the commentary, not that the model is too small |
-| S4 | Whistle detector on the tactical audio | planned | |
+| S4 | Whistle detector on the tactical audio | planned (step 8) | never started: the commentary work came first; marks stoppage starts |
 | S5 | Crowd-noise level (rises on attacks, drops in long stoppages) | planned | |
 | S6 | Broadcast replays as a stoppage clue (replays follow stoppages) | planned | replays already detected by `align_broadcast.py` |
 | S7 | Smart Tagging team tags as weighted clues | planned | via the decoder (M12) |
@@ -52,7 +72,7 @@ Last updated: 2026-10-26.
 |---|---|---|---|
 | V1 | Detector audit of the tracking (420 frames) | done | ghost not a person; ball visible in ~2/3 of gap frames |
 | V2 | **Detector finds the ball inside tracking gaps** | next (background, after S3) | where the ball is during gaps: restart spot? moving? |
-| V3 | Local vision-language model: "is play stopped?" on chosen frames | parked | Kovidh: wait; revisit after the decoder |
+| V3 | Local vision-language model: "is play stopped?" on chosen frames | now (pilot, 30 frames) | qwen2.5vl:3b via Ollama; Kovidh approved 2026-10-26 |
 | V4 | SoccerNet-style whole-video models | dropped | too heavy for the laptop; trained on TV close-ups |
 | V5 | Clips with the tracking drawn on top, for Kovidh to watch and describe in general terms | planned | when a weakness needs understanding |
 | V6 | **Video for the team call**: in live-play gaps, the detector finds the ball and the player nearest it | planned (after M7) | targets the biggest lever; Kovidh's idea |
@@ -64,7 +84,7 @@ Last updated: 2026-10-26.
 | # | Idea | Status | Notes |
 |---|---|---|---|
 | P1 | Practice-match test bench (open data, fault kit, calibration) | done | `scripts/open_test.py` |
-| P1b | Fault kit, missing faults: wrong team labels (~2% of objects, ~5% in the boxes) and large ball errors (> 5 m on ~10% of frames) | planned | found answering "is the damage like ours?"; the kit now has 0.3 m ball noise only |
+| P1b | Fault kit, missing faults: wrong team labels (1.8% of objects, 4× likelier in the boxes) and large ball errors (5-15 m on ~3.5% of frames) | done | practice baseline 0.248 vs real 0.243; v3 0.352 vs v2 0.284 |
 | P2 | Organiser questions: issue #14 (saving model outputs; clips → rules), #11 | open | check each session; upstream RULES now allow people to watch the video |
 | P3 | Merge the organisers' latest docs (23 Oct) into our branch | planned | offered, not done |
 | P4 | Reproducible pipeline: `run.py` regenerates every derived input (alignment, transcript, model outputs) from a clean clone | planned | needed before the final submission |
