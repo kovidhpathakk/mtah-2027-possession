@@ -34,7 +34,10 @@ Last updated: 2026-10-26.
 |---|---|---|---|
 | S1 | Commentary transcript (Whisper, local) | done | first run looped; fixed (VAD, no carried context) |
 | S2 | Commentary keyword events | done | weak clue: only modestly above chance |
-| S3 | **Commentary read by a local LLM**: possession, live/stopped, event per line; reliability vs tracking; general description | **now** (running in background) | qwen3:4b via Ollama |
+| S3 | Commentary read by a local LLM: possession, live/stopped, event per line | done | **at chance for possession** (55% vs ~57% "always Barça"); "stopped" weak (55% vs 40% base) |
+| S3b | Commentary player names → team, without the LLM | done | 55–58% vs 52–54% chance: commentators don't narrate who has the ball; Barça named 3× as often as Athletic |
+| S3c | Commentary as a clue for rare long stoppages (goals, injuries, VAR, subs) | planned (low weight, in the decoder) | |
+| S3d | A bigger local LLM on the commentary | parked | the name test says the information isn't in the commentary, not that the model is too small |
 | S4 | Whistle detector on the tactical audio | planned | |
 | S5 | Crowd-noise level (rises on attacks, drops in long stoppages) | planned | |
 | S6 | Broadcast replays as a stoppage clue (replays follow stoppages) | planned | replays already detected by `align_broadcast.py` |

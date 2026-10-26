@@ -13,6 +13,23 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Commentary does not track possession
+
+Transcript: 2,389 lines after the loop fix (98% distinct, 26% name a team or a one-team player).
+
+- **Local LLM** (qwen3:4b, 2,112 lines labelled, 277 in failed batches): possession Barcelona
+  35%, Athletic 4%, unclear 60%. Its team matches v2's team 48–55% across 0–10 s delays, against
+  ~57% for always answering "Barcelona": chance. Its "stopped" matches v2's dead ball 55% vs a
+  ~40% base rate: weak.
+- **Player names alone** (no LLM): 605 lines name one side more (Barça 464, Athletic 141). Agreement
+  with v3's team 55–58% at −4…+10 s, against a 52–54% chance level.
+- Keyword events: stoppage words line up with v2 stoppages 57–69% vs 37% for "shot" (chance).
+
+Conclusion: commentators do not describe who has the ball moment by moment, and talk about Barça
+three times as often as Athletic. Commentary is parked as a possession clue; it may still mark
+rare long stoppages (goals, injuries, VAR, substitutions) as a low-weight clue in the decoder.
+
+
 ### 2026-10-26 · v3: possession by control (Link & Hoernig, Vidal-Codina)
 
 Sweep on the damaged practice matches (seed 0; 4 reach × 3 duel × 4 hold settings): best reach
