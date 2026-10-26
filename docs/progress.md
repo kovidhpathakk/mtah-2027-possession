@@ -242,7 +242,8 @@ terms.
 | Step | Status | Result |
 |---|---|---|
 | **Precise tracking** (`possession/precise.py`): clean-up, ball blips, Savitzky-Golay smoothing (Vidal-Codina), broadcast ball where tactical has none | ✅ done | ball known on 61.8% of graded frames (was 59.3%); score neutral on practice and on our match: **the tracking is about as precise as it gets; the gains are in interpreting it** |
-| **Commentary transcription** (`scripts/transcribe.py`): Whisper large-v3-turbo via whisper.cpp, run locally, pinned model, repeatable output | ✅ pilot (3.6× real time, identical on rerun); full run in progress | – |
+| **Commentary transcription** (`scripts/transcribe.py`): Whisper large-v3-turbo via whisper.cpp, run locally, pinned model, repeatable output | first full run **failed**: Whisper looped (5 repeated lines = 86% of the transcript, 3% naming a player). Fixed with speech detection (Silero VAD), no carried-over text and no non-speech tokens: 10-min test gives real lines, 26% naming a team or player, English confirmed, still identical on rerun. Full re-run in progress | – |
+| **Commentary analyst** (`scripts/commentary_llm.py`): a local LLM (Ollama, qwen3:4b) labels every line: who has the ball, live or stopped, which event; checked against the tracking at different commentary delays; plus a general description (no times, scores or incidents) | ✅ pilot works (all lines labelled) | – |
 | Precise Smart Tagging: snap each set-piece window to the actual restart, add the taker's team, trust per tag type | next | – |
 | Commentary → events: rules first (keywords, squad names), a local LLM second | after transcription | – |
 | Imitation clues on the practice matches, from their event lists | planned | – |
