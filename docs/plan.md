@@ -54,6 +54,9 @@ smoothed; a ball track of our own from the video could be sharp, and could fill 
 | T3 | Our own ball track from the video | T3 | **parked**: needs a detector that finds the ball reliably; route left: the broadcast video (ball several times larger), if disk space allows a 14 GB re-download |
 | T4 | v4's touch rule and the trained models on our own ball track | T4 | after T3 |
 | T5 | Player re-detection (missing players), team labels from shirt colours | V8, V15 | later |
+| T6 | **Broadcast pilot**: the same ball detector on the zoomed-in broadcast video (ball several times larger), mapped to tactical time | T6 | ⏳ running (`scripts/ball_pilot_broadcast.py`) |
+| T7 | Fine-tune a ball detector on **public wide-angle football footage** with labelled balls (e.g. fixed-camera research datasets), possibly on a free cloud GPU since only public data goes there. **Never on our match's video with the provided tracking as labels**: the organisers refused exactly that (issue #2) | T7 | planned, if T6 is not enough |
+| T8 | A vision-language model (Qwen-VL) for tracking | – | dropped: good at describing scenes, imprecise at positions and far too slow for 25 frames a second; detectors are the right tool |
 
 ### Deep dive 1: the team call while the ball travels (passes, loose balls): in progress
 

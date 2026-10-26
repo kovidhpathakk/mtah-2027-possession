@@ -93,6 +93,11 @@ organisers can inspect. Three different restrictions get confused easily, so the
 | **No private ground truth** | The full-match answers | The public 5 minutes |
 | **No data to hosted LLMs** (terms) | Sending tracking, video, audio or extracts to Claude, ChatGPT, Gemini, etc. | Running models **locally**; asking hosted LLMs about code, ideas and aggregates |
 
+**Training models.** A model trained on *other* footage or data is fine if its source is stated.
+A detector trained on our match's video with the provided tracking or homography as labels is
+**not** allowed (organisers, issue #2), and neither are hand labels on our match for any purpose
+(issues #8, #10).
+
 So every signal below is usable **if an algorithm produces it**. Our own clip notes are for
 understanding only; they cannot become labels or a validation set.
 
