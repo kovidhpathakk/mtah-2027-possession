@@ -337,6 +337,15 @@ with swap).
    public window moved from 10% to 15% (truth 20%) without anything being tuned on it. Bonus: our
    players' pace during ball gaps shows our tracker's gaps sit at stoppages (the "stoppage"
    scenario), something we had thought unmeasurable without answers.
+2. **The ball in the air.** DFL measures the ball's height: with the ball on the ground v6 calls
+   the team right 92% of the time, bouncing 78%, high 82%, and in the 2 s after a high ball lands
+   74%. About half of the team errors happen with the ball off the ground (29% of live play).
+3. **Why the possession count falls.** 60% of true possessions last under 5 s (interceptions,
+   tackles, headers) and v6 finds few of them (13% of those under 2 s, 41% of 2-5 s). For the 2-5 s
+   ones the model does favour the right team 72% of the time: the decoder's fixed price per change
+   smooths them away. Next fix: a learned price (a model of "a change of possession happens here").
+4. **Review clips for Kovidh**: 37 clips of 7 kinds of doubtful moment, with the tracker's ball and
+   v6's answer drawn on (`scripts/review_clips.py`). Waiting for his notes.
 
 **Where we stand on testing.** Every practice match is scored by models trained on the other
 seven, and settings are confirmed on fresh damage. But all 8 matches have shaped our choices, so a

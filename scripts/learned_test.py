@@ -21,6 +21,12 @@ useless or duplicated by another.
     .venv/bin/python scripts/learned_test.py --stoppages
     .venv/bin/python scripts/learned_test.py --possessions [--method v5]
     .venv/bin/python scripts/learned_test.py --air
+    .venv/bin/python scripts/learned_test.py --short
+
+--short asks why short possessions (under 5 s) are missed: inside each true one, does the team
+model favour the right team (mean P >= 0.5: the decoder suppresses it) or not (the model misses
+it)? Broken down by situation: ball in the air (DFL height), a duel (both teams within 2 m), just
+after a stoppage (first 3 s), ball missing in the damaged copy.
 
 --air asks how v6 copes with the ball in the air. Our tracking is flat (no height): a lofted ball
 is lost or placed where its shadow falls, under players' heads. DFL measures the ball's height,
@@ -62,7 +68,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "evaluation"))
 import possession_metrics as pm  # noqa: E402
 
-from possession import cleanup, learned, stoppages  # noqa: E402
+from possession import cleanup, control, learned, stoppages  # noqa: E402
 from possession.damage import SCENARIOS, damage, our_profile  # noqa: E402
 from possession.external import load_source, sources  # noqa: E402
 
@@ -258,6 +264,57 @@ def air_test():
         fast_high / max(fast_all, 1)))
 
 
+def short_test():
+    """Why short possessions are missed (see the docstring); mixed scenario, damage seed 0."""
+    profile = our_profile()
+    keys = ("all", "ball high (2 m+)", "duel (both within 2 m)", "first 3 s after a stoppage",
+            "ball missing (damaged)", "none of these")
+    stats = {(k, band): np.zeros(3) for k in keys for band in ("0-2", "2-5")}  # n, model favours, found
+    for name in learned.practice_matches():
+        t = load_source(name)
+        labels = np.where(t["labels"] == "X", "D", t["labels"])
+        damaged = damage(t, "mixed", np.random.default_rng(0), profile)
+        p_dead, p_home = learned.probabilities(damaged, name)
+        path = learned.decode_joint(p_dead, p_home, 40.0, 10.0)
+        v6 = learned.labels_from(path, path == 2)
+        v6[t["labels"] == "X"] = "D"
+        z = t["ball_z"].astype(float) if "ball_z" in t else np.full(len(labels), np.nan)
+        dist = control.team_distances(t["players"], t["ball"], t["team"], tuple(t["pitch"]))
+        duel = (dist < 2.0).all(axis=1)
+        dead = labels == "D"
+        last_dead = np.maximum.accumulate(np.where(dead, np.arange(len(dead)), -10 ** 6))
+        after_stop = np.arange(len(dead)) - last_dead <= 75
+        missing = np.isnan(damaged["ball"][:, 0])
+        true_runs = possession_runs(labels)
+        hits = matched(true_runs, possession_runs(v6))
+        for (a, b, team), hit in zip(zip(*true_runs), hits):
+            seconds = (b - a) / 25
+            if seconds >= 5:
+                continue
+            band = "0-2" if seconds < 2 else "2-5"
+            p_team = p_home[a:b] if team == "H" else 1 - p_home[a:b]
+            favours = np.mean(p_team) >= 0.5
+            flags = {"ball high (2 m+)": np.nanmean(z[a:b]) >= 2.0 if not np.isnan(z[a:b]).all() else False,
+                     "duel (both within 2 m)": duel[a:b].mean() >= 0.5,
+                     "first 3 s after a stoppage": after_stop[a],
+                     "ball missing (damaged)": missing[a:b].mean() >= 0.5}
+            flags["none of these"] = not any(flags.values())
+            flags["all"] = True
+            for k, on in flags.items():
+                if on:
+                    stats[(k, band)] += [1, favours, hit]
+        print("  {}".format(name))
+    print("\nshort true possessions: share where the team model favours the right team on average"
+          " (the decoder suppressed it) and share v6 found")
+    print("{:<30} {:>22} {:>22}".format("situation", "0-2 s: n / favours / found", "2-5 s: n / favours / found"))
+    for k in keys:
+        cells = []
+        for band in ("0-2", "2-5"):
+            n, fav, hit = stats[(k, band)]
+            cells.append("{:>6,.0f} / {:>4.0%} / {:>4.0%}".format(n, fav / max(n, 1), hit / max(n, 1)))
+        print("{:<30} {:>22} {:>22}".format(k, *cells))
+
+
 def possessions_per_minute(labels, graded):
     live = np.isin(np.where(graded, labels, "D"), ("H", "A"))
     starts = live & np.r_[True, labels[1:] != labels[:-1]]
@@ -347,6 +404,7 @@ if __name__ == '__main__':
     parser.add_argument("--stoppages", action="store_true", help="learned stoppages (deep dive 4)")
     parser.add_argument("--possessions", action="store_true", help="found and invented possessions")
     parser.add_argument("--air", action="store_true", help="v6 by ball height (DFL)")
+    parser.add_argument("--short", action="store_true", help="why short possessions are missed")
     parser.add_argument("--method", default="v5", help="for --possessions")
     parser.add_argument("--first-seed", type=int, default=0, help="first damage seed of the test copies")
     parser.add_argument("--live-costs", nargs="+", type=float, default=list(LIVE_COSTS),
@@ -358,6 +416,9 @@ if __name__ == '__main__':
         sys.exit(0)
     if args.air:
         air_test()
+        sys.exit(0)
+    if args.short:
+        short_test()
         sys.exit(0)
     if args.stoppages:
         stoppage_test(args.seeds, args.live_costs, args.switch_costs, args.first_seed)

@@ -70,3 +70,50 @@ score: the practice test predicts reality better than before.
 
 The public window moved towards its truth without being looked at during the fix, which supports
 the diagnosis. The falling possession count is now the main open weakness (step 2).
+
+## Step 2: the ball in the air (`learned_test.py --air`)
+
+Our tracking is flat. DFL measures the ball's height, so v6 (held-out models, damaged tracking,
+true height) was scored by height:
+
+| Ball (DFL, true height) | share of live play | v6 team call right | called dead |
+|---|---|---|---|
+| on the ground (< 0.5 m) | 71% | 91.8% | 4.8% |
+| low, bouncing (0.5-2 m) | 12% | 77.8% | 6.7% |
+| high (2 m+) | 17% | 82.4% | 5.6% |
+| first 2 s after a high ball comes down | – | 74.1% | – |
+
+About half of all team errors happen with the ball off the ground (29% of live play); the landing
+(headers, second balls) is the weakest moment. On our match a 2D ball at 18 m/s+ is high 63% of the
+time (DFL), the best stand-in for height we have. Ideas: a "probably in the air" clue trained on
+DFL's height (M30); "where will it land and whose players are nearer" (reachability, Link &
+Hoernig, M20). Clips of fast long balls for Kovidh: does the tracked ball follow a lofted ball?
+
+## Step 3: why the possession count falls (`learned_test.py --possessions`, `--short`)
+
+| True possession length | how many | v6 finds | v6 predicts | of those, real |
+|---|---|---|---|---|
+| under 2 s | 3,069 (30%) | 13% | 986 | 38% |
+| 2-5 s | 3,087 (30%) | 41% | 2,055 | 60% |
+| 5-10 s | 1,902 | 66% | 1,686 | 68% |
+| 10-20 s | 1,302 | 79% | 1,449 | 79% |
+| 20 s+ | 1,020 | 87% | 1,098 | 85% |
+
+(IoU >= 0.5, same team; damaged practice, seed 0.) v6 finds ~47% of true possessions and ~66% of
+its own are real: **recall is the bottleneck**, and it is lost on short possessions.
+
+Inside each short true possession, does the team model favour the right team on average?
+
+| | model favours the right team | v6 finds it |
+|---|---|---|
+| under 2 s | 48% | 13% |
+| 2-5 s | 72% | 41% |
+| ... first 3 s after a stoppage (under 2 s / 2-5 s) | 76% / 88% | 39% / 62% |
+| ... a duel, under 2 s | 39% | 3% |
+| ... ball missing, under 2 s / 2-5 s | 34% / 55% | 2% / 15% |
+
+Two different problems. **2-5 s possessions and restarts: the model sees them, the decoder
+smooths half of them away**: one fixed price per change of team is too blunt (a lower price
+everywhere trades the gain for invented possessions: v5's sweep, 5 and 10 tie). Fix to try: a
+**learned price**, from a model of "a change of possession happens here" (M25). **Under 2 s and
+duels: the model does not see them** in tracking like ours; lower priority.
