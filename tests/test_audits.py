@@ -172,6 +172,17 @@ class Learned(unittest.TestCase):
         self.assertEqual((team[:100] == learned.HOME).all(), True)
         self.assertEqual((team[110:] == learned.AWAY).all(), True)
 
+    def test_joint_decoder(self):
+        # Barca, a clear stoppage, then Athletic; a one-frame dead blip and a one-frame team blip
+        # inside are not worth their edges.
+        p_dead = np.r_[np.full(100, 0.05), np.full(50, 0.95), np.full(100, 0.05)]
+        p_home = np.r_[np.full(150, 0.9), np.full(100, 0.1)]
+        p_dead[30], p_home[200] = 0.99, 0.95
+        path = learned.decode_joint(p_dead, p_home, live_cost=10.0, switch_cost=10.0)
+        self.assertEqual(path.tolist(), [learned.HOME] * 100 + [2] * 50 + [learned.AWAY] * 100)
+        free = learned.decode_joint(p_dead, p_home, live_cost=0.0, switch_cost=0.0)
+        self.assertEqual((free[30], free[200]), (2, learned.HOME))
+
     def test_views_are_mirrors(self):
         rng = np.random.default_rng(2)
         n = 3000

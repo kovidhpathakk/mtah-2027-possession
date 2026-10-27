@@ -67,7 +67,7 @@ matches is allowed.
     python scripts/check_data.py --baseline     verify a data copy
     python run.py [--method NAME]               build a submission into evaluation/results/
     python scripts/open_test.py                 8 open-data matches with our faults added: compare methods here
-    python scripts/learned_test.py [--importance|--oracle]   v5's learned team call: sweep, clues, what-ifs
+    python scripts/learned_test.py [--importance|--oracle|--stoppages|--possessions]   the learned models: sweeps, clues, what-ifs
     python scripts/realism_report.py            does the damaged practice data look like our match? (run after any kit change)
     python scripts/damage_test.py               public 5 min with realistic ball blackouts
     python scripts/sanity_report.py             does a full-match submission look like football

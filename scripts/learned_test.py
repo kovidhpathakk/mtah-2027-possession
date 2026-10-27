@@ -18,6 +18,21 @@ useless or duplicated by another.
     .venv/bin/python scripts/learned_test.py [--switch 5 10 20 40 80] [--seeds 2]
     .venv/bin/python scripts/learned_test.py --importance
     .venv/bin/python scripts/learned_test.py --oracle
+    .venv/bin/python scripts/learned_test.py --stoppages
+    .venv/bin/python scripts/learned_test.py --possessions [--method v5]
+
+--possessions asks which possessions a method finds: each true possession (a run of H or of A in
+the answers) counts as found when a predicted possession of the same team overlaps it with
+temporal IoU >= 0.5 (the middle of spellF1's 0.3-0.7 range); each predicted one counts as real
+when it matches a true one the same way. Broken down by length, to see whether the missing
+possessions are the short ones.
+
+--stoppages tests learned stoppages (deep dive 4) on top of v5's team call: the stoppage model's
+answers thresholded and tidied like v2's, or decoded together with the team model
+(possession.learned.decode_joint) at several costs per stoppage edge. Same held-out copies as the
+main test; v5 (v4's stoppage rules) is the reference. Also prints how many truly dead frames each
+calls live (missed) and how many live frames it calls dead (false), per scenario, because the
+three ways of placing ball gaps are where a learned stoppage model could fool itself.
 
 --oracle asks where v5 still loses points: v5 with the true stoppages (team decoded within the
 true live stretches), and v5's stoppages with the true team in live play; plus possessions per
@@ -39,7 +54,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "evaluation"))
 import possession_metrics as pm  # noqa: E402
 
-from possession import learned  # noqa: E402
+from possession import cleanup, learned, stoppages  # noqa: E402
 from possession.damage import SCENARIOS, damage, our_profile  # noqa: E402
 from possession.external import load_source, sources  # noqa: E402
 
@@ -52,6 +67,131 @@ FAMILIES = {
     "ball": ("ball_",),
     "team shape": ("x_", "spread_", "speed_", "goalside_"),
 }
+
+
+THRESHOLDS = (0.4, 0.5, 0.6)
+LIVE_COSTS = (5.0, 10.0, 20.0, 40.0)
+
+
+def stoppage_test(seeds, live_costs=LIVE_COSTS, switch_costs=(10.0,), first_seed=0):
+    """Learned stoppages vs v4's rules, both with v5's team call (see the docstring)."""
+    profile = our_profile()
+    pairs = [(c, w) for c in live_costs for w in switch_costs]
+    label = {pair: "joint {:g}".format(pair[0]) if len(switch_costs) == 1 else
+             "joint {:g}/{:g}".format(*pair) for pair in pairs}
+    keys = ["v5"] + ["threshold {:.1f}".format(th) for th in THRESHOLDS] + [label[p] for p in pairs]
+    scores = {k: {s: [] for s in SCENARIOS} for k in keys}
+    missed = {k: {s: [] for s in SCENARIOS} for k in keys}
+    false = {k: {s: [] for s in SCENARIOS} for k in keys}
+    started = time.time()
+    for name in learned.practice_matches():
+        t = load_source(name)
+        gt_codes = pm.label_codes(t["labels"])
+        graded = t["labels"] != "X"
+        true_dead = graded & (t["labels"] == "D")
+        true_live = graded & ~true_dead
+        mine = {k: [] for k in keys}
+        for scenario in SCENARIOS:
+            for seed in range(first_seed, first_seed + seeds):
+                damaged = damage(t, scenario, np.random.default_rng(seed), profile)
+                p_dead, p_home = learned.probabilities(damaged, name)
+                rules = stoppages.tidy(stoppages.dead_mask(cleanup.clean(damaged)))
+                calls = {"v5": learned.labels_from(learned.decode(p_home, rules, 10.0), rules)}
+                for th in THRESHOLDS:
+                    dead = stoppages.tidy(p_dead >= th)
+                    calls["threshold {:.1f}".format(th)] = learned.labels_from(
+                        learned.decode(p_home, dead, 10.0), dead)
+                for pair in pairs:
+                    path = learned.decode_joint(p_dead, p_home, *pair)
+                    calls[label[pair]] = learned.labels_from(path, path == 2)
+                for k in keys:
+                    result = spell(calls[k], gt_codes)
+                    scores[k][scenario].append(result)
+                    mine[k].append(result)
+                    missed[k][scenario].append(np.mean(calls[k][true_dead] != "D"))
+                    false[k][scenario].append(np.mean(calls[k][true_live] == "D"))
+        best = max(keys[1:], key=lambda k: np.mean(mine[k]))
+        print("  {:<12} v5 {:.3f}  best learned stoppages ({}) {:.3f}  ({:.0f} s)".format(
+            name, np.mean(mine["v5"]), best, np.mean(mine[best]), time.time() - started))
+
+    reference = np.concatenate([scores["v5"][s] for s in SCENARIOS])
+    print("\n{:<15} {:>9}".format("stoppages", "practice") + "".join(
+        "{:>10}".format(s) for s in SCENARIOS) + "{:>12}{:>16}".format("beats v5", "missed / false"))
+    print("-" * 86)
+    for k in keys:
+        mine = np.concatenate([scores[k][s] for s in SCENARIOS])
+        print("{:<15} {:>9.3f}".format(k, np.mean([np.mean(scores[k][s]) for s in SCENARIOS])) +
+              "".join("{:>10.3f}".format(np.mean(scores[k][s])) for s in SCENARIOS) +
+              "{:>12}".format("{}/{}".format(int((mine > reference).sum()), len(mine))) +
+              "{:>16}".format("{:.0%} / {:.0%}".format(
+                  np.mean([np.mean(missed[k][s]) for s in SCENARIOS]),
+                  np.mean([np.mean(false[k][s]) for s in SCENARIOS]))))
+    print("\nmissed: truly dead frames called live; false: live frames called dead (graded frames)")
+    print("\nper scenario, missed / false:")
+    for k in ("v5", "threshold 0.5", label[pairs[len(pairs) // 2]]):
+        print("  {:<15}".format(k) + "".join("{:>10}: {:.0%} / {:.0%}".format(
+            s, np.mean(missed[k][s]), np.mean(false[k][s])) for s in SCENARIOS))
+
+
+LENGTHS = ((0, 2), (2, 5), (5, 10), (10, 20), (20, 10 ** 6))  # s
+
+
+def possession_runs(labels):
+    """(start, stop, team) of every run of H or of A."""
+    change = np.flatnonzero(np.r_[True, labels[1:] != labels[:-1]])
+    stops = np.r_[change[1:], len(labels)]
+    keep = np.isin(labels[change], ("H", "A"))
+    return change[keep], stops[keep], labels[change][keep]
+
+
+def matched(a_runs, b_runs, iou=0.5):
+    """For each run in a: does a run of b with the same team overlap it with IoU >= iou?"""
+    starts, stops, teams = b_runs
+    out = []
+    for a, b, team in zip(*a_runs):
+        lo = np.searchsorted(stops, a, side="right")
+        hi = np.searchsorted(starts, b, side="left")
+        best = 0.0
+        for k in range(lo, hi):
+            if teams[k] == team:
+                inter = min(b, stops[k]) - max(a, starts[k])
+                best = max(best, inter / (max(b, stops[k]) - min(a, starts[k])))
+        out.append(best >= iou)
+    return np.array(out, dtype=bool)
+
+
+def possession_test(method, seeds):
+    """Found and invented possessions by length (see the docstring)."""
+    from possession.methods import METHODS
+    profile = our_profile()
+    found = {k: [0, 0] for k in LENGTHS}
+    real = {k: [0, 0] for k in LENGTHS}
+    for name in learned.practice_matches():
+        t = load_source(name)
+        truth = np.where(t["labels"] == "X", "D", t["labels"])
+        true_runs = possession_runs(truth)
+        for scenario in SCENARIOS:
+            for seed in range(seeds):
+                labels = np.asarray(METHODS[method](damage(t, scenario, np.random.default_rng(seed),
+                                                           profile)), dtype="<U1").copy()
+                labels[t["labels"] == "X"] = "D"
+                ours = possession_runs(labels)
+                for runs, hits, table in ((true_runs, matched(true_runs, ours), found),
+                                          (ours, matched(ours, true_runs), real)):
+                    seconds = (runs[1] - runs[0]) / 25
+                    for low, high in LENGTHS:
+                        inside = (seconds >= low) & (seconds < high)
+                        table[(low, high)][0] += int(hits[inside].sum())
+                        table[(low, high)][1] += int(inside.sum())
+        print("  {}".format(name))
+    print("\n{}: possessions by length (IoU >= 0.5, same team)".format(method))
+    print("{:<10} {:>12} {:>10} {:>14} {:>10}".format("length s", "true ones", "found", "predicted",
+                                                       "real"))
+    for low, high in LENGTHS:
+        f, r = found[(low, high)], real[(low, high)]
+        print("{:<10} {:>12,} {:>10.0%} {:>14,} {:>10.0%}".format(
+            "{}-{}".format(low, high if high < 10 ** 6 else ""), f[1], f[0] / max(f[1], 1), r[1],
+            r[0] / max(r[1], 1)))
 
 
 def possessions_per_minute(labels, graded):
@@ -140,7 +280,20 @@ if __name__ == '__main__':
     parser.add_argument("--seeds", type=int, default=2, help="damaged copies per match and scenario")
     parser.add_argument("--importance", action="store_true", help="which clues the model leans on")
     parser.add_argument("--oracle", action="store_true", help="where v5 still loses points")
+    parser.add_argument("--stoppages", action="store_true", help="learned stoppages (deep dive 4)")
+    parser.add_argument("--possessions", action="store_true", help="found and invented possessions")
+    parser.add_argument("--method", default="v5", help="for --possessions")
+    parser.add_argument("--first-seed", type=int, default=0, help="first damage seed of the test copies")
+    parser.add_argument("--live-costs", nargs="+", type=float, default=list(LIVE_COSTS),
+                        help="for --stoppages")
+    parser.add_argument("--switch-costs", nargs="+", type=float, default=[10.0], help="for --stoppages")
     args = parser.parse_args()
+    if args.possessions:
+        possession_test(args.method, args.seeds)
+        sys.exit(0)
+    if args.stoppages:
+        stoppage_test(args.seeds, args.live_costs, args.switch_costs, args.first_seed)
+        sys.exit(0)
     if args.importance:
         importance()
         sys.exit(0)

@@ -25,7 +25,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from possession import cleanup, control  # noqa: E402
+from possession import cleanup, control, stoppages  # noqa: E402
+from possession.blackout import windowed_mean  # noqa: E402
 from possession.damage import damage, our_profile  # noqa: E402
 from possession.external import load_source, sources  # noqa: E402
 from possession.methods import METHODS  # noqa: E402
@@ -103,6 +104,21 @@ def measures(t, graded):
                               & np.isin(labels[:-1], ["H", "A"]) & graded[1:])
     out["live team changes per live minute (v4)"] = len(switches) / minutes
     out["dead-ball share of graded frames (v4)"] = np.mean(labels[graded] == "D")
+
+    # what play looks like when it may be stopped (the learned stoppage model's main clues;
+    # no answers needed)
+    still = seen & (stoppages.ball_speed(ball) < stoppages.STILL)
+    long_still = np.zeros(len(still), dtype=bool)
+    for a, b in stoppages.runs(still):
+        long_still[a:b] = b - a >= stoppages.STILL_FOR
+    out["visible ball still for 2 s+, share of graded frames"] = np.mean(long_still[graded])
+    speeds = np.where(present, clean["speed"], np.nan)
+    mean_speed = np.nanmean(speeds, axis=1)
+    relative = windowed_mean(mean_speed / np.nanmedian(mean_speed[seen]), 75)
+    out["slow phases: players under half their typical speed (+/- 3 s)"] = np.mean(relative[graded] < 0.5)
+    out["player speed with the ball missing, vs typical"] = np.nanmedian(relative[graded & ~seen])
+    out["players walking (< 1.5 m/s), share of player-frames"] = np.nanmean(
+        np.where(present[graded], speeds[graded] < 1.5, np.nan))
     return out
 
 

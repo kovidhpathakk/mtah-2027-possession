@@ -14,9 +14,9 @@ Last updated: 2026-10-26.
 
 | | |
 |---|---|
-| **Best model** | **v5** (new candidate): practice **0.430** on the realistic kit (v4 0.279 on the same damaged copies; baseline 0.229 here vs its real 0.243). Realistic expectation on the real match: around 0.4 (practice sits within ~0.015 of the real score for the baseline) |
-| **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v4.csv` and `ours_v5.csv` also valid |
-| **Working on** | Next: learned stoppages (deep dive 4, now worth up to +0.17), then v5's missing possessions |
+| **Best model** | **v6** (new candidate): practice **0.558** on the realistic kit (v5 0.430, v4 0.279 on the same damaged copies; baseline 0.229 here vs its real 0.243). Realistic expectation on the real match: around 0.5-0.55, if practice stays as close to reality as it is for the baseline (within ~0.015) |
+| **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v4.csv`, `ours_v5.csv`, `ours_v6.csv` also valid |
+| **Working on** | Deep dive 5: understand v6's remaining errors before adding anything (anatomy, real cases, clips); a sealed final exam (Metrica Games 1-2) |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Docs** | `docs/README.md` maps every file |
 | **Deadline** | 17 November 2026 |
@@ -64,7 +64,8 @@ smoothed like ours, from 2026-10-26). Earlier, sharper-ball numbers are in `expe
 | v2 (`v2`) | 0.271 | 0.371 | – | 40% | superseded |
 | v3 (`v3`) | 0.291 | 0.357 | – | 40% | level with v4 on practice |
 | v4 (`v4`) | 0.288 | 0.431 | – | 40% | superseded (fallback) |
-| **v5** (`v5`) | **0.430** | **0.607** | – | **40%** | **candidate**: learned team call (fresh seeds; v4 0.279 on the same copies) |
+| v5 (`v5`) | 0.430 | 0.607 | – | 40% | superseded: learned team call |
+| **v6** (`v6`) | **0.558** | **0.640** | – | **43%** | **candidate**: + learned stoppages, one decoder (fresh seeds; v5 0.430 on the same copies) |
 
 ## The story so far
 
@@ -309,6 +310,27 @@ with swap).
    on top of v4: better team calls stop hiding stoppage errors), a perfect team call +0.29. The
    missing possessions are a team-call matter. So the stoppages come next, with the same machinery
    as v5: a model trained on the practice matches instead of hand rules.
+
+**Deep dive 4 (first round): learned stoppages → v6**
+1. **A stoppage model** in place of v2's hand rules: 35 clues per frame (v2's rules themselves,
+   how long the ball has been still or missing, where it vanished and came back, how fast the
+   players move and how many walk, how many people the tracker still follows, crowding at the ball
+   and in the boxes), trained on the damaged practice matches like the team model.
+2. **One decoder for H, A and D together**, paying a price for every stoppage edge and every change
+   of team, so a doubtful stoppage and a clear change of team are weighed against each other.
+3. **Practice 0.430 → 0.558 on fresh damage**, better in every one of 48 runs and every scenario.
+   Dead-ball frames: missed 24% → 5%, false 23% → 4%. Damage test 0.440 → 0.572.
+4. **Checked for self-deception:** it is right 94% of the time even where ball gaps tell nothing,
+   so we looked for a quirk of the practice data (a ball frozen during stoppages): too rare to
+   explain it. It leans on **player speed** (players walk during stoppages), and Lang et al. 2022
+   found player movement alone gets 92%. Its 35 clues look the same on our match as on practice,
+   and it is as sure of itself there. Rebuilt from nothing, the submission is byte-identical.
+5. **Warnings for the next dive:** possessions keep falling (2.66 a minute on our match), and in the
+   public window v6 calls 10% of frames dead against the truth's 20% (not tuned on).
+
+**Where we stand on testing.** Every practice match is scored by models trained on the other
+seven, and settings are confirmed on fresh damage. But all 8 matches have shaped our choices, so a
+**sealed exam** (two more Metrica matches, used only to score milestone versions) comes next.
 
 ### Stage 9 · Can we make better tracking from the video? (Oct 26)
 

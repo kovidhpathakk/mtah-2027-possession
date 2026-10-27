@@ -23,7 +23,7 @@ Confidence: **high** (several independent checks), **medium** (one kind of evide
 | A9 | The tactical ball is more reliable than the broadcast one | video detector: closer to tactical 23 times, broadcast 11, neither 29 | medium | – |
 | A10 | The "ghost" is a frozen leftover track | frozen to the mm for ~10 min; detector finds no person there (6% vs 94%) | high | – |
 | A11 | Smart Tagging team tags are ~88% right in open play, ~60% near the box | vs clear control in the tracking; the two trackers agree on clear control 97% | medium | – |
-| A12 | v5's model, trained on the damaged practice matches, transfers to our match | rests on A4-A6; on our match the model is as confident as on practice (0.90 mean), agrees more with Smart Tagging than v4 (76/82% vs 74/78%) and flickers less; damage test 0.440 vs v4 0.329 | medium | its strongest clue is team shape, which our tracker measures well (players are tracked far better than the ball); check v5 per half and per game state on our match without answers (sanity report) |
+| A12 | v5/v6's models, trained on the damaged practice matches, transfer to our match | rests on A4-A6. Team model: as confident on our match as on practice (0.90), Smart Tagging agreement up, less flicker. Stoppage model: all 35 clues inside our match's 10th-90th percentile range on practice, confidence 0.947 vs 0.961, 41% predicted dead. Damage test v6 0.572 vs v4 0.329 | medium | sealed exam on matches never used for choices (E1); deep dive 5 on our match's clips; the public window's dead share (10% vs truth 20%) is a warning to explain |
 
 ## Data-quality register
 

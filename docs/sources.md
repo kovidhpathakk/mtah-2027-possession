@@ -15,6 +15,14 @@ use and that the technical document explains it (RULES.md). Last updated: 2026-1
 | Amrita (2011). Automated referee-whistle detection | whistle detection reaches ~92% sensitivity | **not yet**: whistle detector (deep dive 4) | backlog S4 |
 | SoccerNet challenges (2025). [arXiv 2508.19182](https://arxiv.org/pdf/2508.19182) | state-of-the-art video models | **dropped**: too heavy for the laptop | backlog V4 |
 
+### Found in the research pass of 2026-10-26
+
+| Paper | What it does | Used? | Plan |
+|---|---|---|---|
+| Lang, Wild, Isenko, Link (2022). "Predicting the in-game status in soccer with machine learning using spatiotemporal player tracking data." *Scientific Reports* 12. [link](https://pmc.ncbi.nlm.nih.gov/articles/PMC9522646/) | in play vs stoppage from **player tracking alone** (positions, speeds, accelerations at shifts of 0.4-80 s), 102 Bundesliga matches; AdaBoost best: 92% of frames, stoppages of 2 s+ found 79% (precision 81%) | supports v6's stoppage model (it leans on player speed) | M27: their long windows |
+| Capellera et al. (2024). "TranSPORTmer: A Holistic Approach to Trajectory Understanding in Multi-Agent Sports." *ACCV 2024*. [link](https://openaccess.thecvf.com/content/ACCV2024/html/Capellera_TranSPORTmer_A_Holistic_Approach_to_Trajectory_Understanding_in_Multi-Agent_Sports_ACCV_2024_paper.html) | one transformer for forecasting, imputation, ball inference and a per-frame state (pass, possession, uncontrolled, out of play) | not yet | M28 |
+| "Multi-Modal Soccer Scene Analysis with Masked Pre-Training" (arXiv 2512.19528, Dec 2025). [link](https://arxiv.org/pdf/2512.19528) | reports 85.9% state classification and 89.6% possessor identification, +7.6 / +6.9 points over TranSPORTmer | not yet | M28 |
+
 ## Datasets (other matches)
 
 | Dataset | Licence | How we use it |

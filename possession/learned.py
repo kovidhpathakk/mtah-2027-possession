@@ -64,6 +64,12 @@ DIRECTION_WINDOW = 3000     # +/- 2 min: which way each team attacks
 SUBSAMPLE = 5               # train on every 5th live frame: neighbours are near copies
 SWITCH_COST = 20.0          # log-probability paid per change of team when decoding
 TRAIN_SEED = 100            # damage seed of the training copies; tests use seeds 0, 1, ...
+# Stoppage model (deep dive 4)
+STOP_WINDOWS = (25, 75, 200)   # frames: +/- 1, 3 and 8 s
+STOP_CAP = 1500                # frames (60 s): run lengths and gaps stop counting here
+WALKING = 1.5                  # m/s: slower is walking or standing
+BOX_DEPTH, BOX_HALF_WIDTH = 16.5, 20.16   # m
+LIVE_COST = 40.0               # log-probability per start or end of a stoppage (sweep: 40-80 best)
 MODEL_OPTIONS = dict(max_iter=200, learning_rate=0.1, max_leaf_nodes=31, l2_regularization=1.0,
                      early_stopping=False, random_state=0)
 HOME, AWAY, NOBODY = 0, 1, -1
@@ -112,13 +118,23 @@ def _last_next(events, dead):
             np.where(ok_next, np.minimum(following - index, CAP), CAP))
 
 
-def _since_until(mask):
-    """Frames since the last and until the next True in `mask`, capped at CAP."""
+def _since_until(mask, cap=CAP):
+    """Frames since the last and until the next True in `mask`, capped at `cap`."""
     n = len(mask)
     index = np.arange(n)
-    last = np.maximum.accumulate(np.where(mask, index, -CAP))
-    following = np.minimum.accumulate(np.where(mask, index, n + CAP)[::-1])[::-1]
-    return np.minimum(index - last, CAP), np.minimum(following - index, CAP)
+    last = np.maximum.accumulate(np.where(mask, index, -cap))
+    following = np.minimum.accumulate(np.where(mask, index, n + cap)[::-1])[::-1]
+    return np.minimum(index - last, cap), np.minimum(following - index, cap)
+
+
+def _run_info(mask, cap=STOP_CAP):
+    """Inside each True run of `mask`: its length, frames since it began, frames until it ends
+    (capped at `cap`); 0 outside runs."""
+    length, since, until = (np.zeros(len(mask)) for _ in range(3))
+    for a, b in stoppages.runs(mask):
+        steps = np.arange(b - a)
+        length[a:b], since[a:b], until[a:b] = b - a, steps, steps[::-1]
+    return np.minimum(length, cap), np.minimum(since, cap), np.minimum(until, cap)
 
 
 def features(tracking, dead):
@@ -209,6 +225,82 @@ def features(tracking, dead):
     return np.column_stack([np.asarray(cols[c], dtype=np.float32) for c in names]), names
 
 
+def stoppage_features(tracking):
+    """(n, k) float32 clues for "is play stopped here?" and their names. They treat both teams
+    alike (each team-level clue enters as the lower and the higher of the two teams' values), so
+    one view is enough. `tracking` should already be cleaned.
+
+    v2's rules (possession.stoppages) enter as clues next to what they were built from, so the
+    model can learn where each rule is right: a ball out by 1 m, a ball still for 2 s, a gap with
+    slow players or at an edge. New clues follow Vidal-Codina et al. 2022 (a missing ball and
+    restart positions mark dead ball) and our audits: players walk or stand during stoppages, our
+    tracker drops many players at once mostly during stoppages, set pieces crowd the boxes, a ball
+    that comes back where it vanished was placed for a restart."""
+    pitch = np.array(tracking.get("pitch", PITCH), dtype=float)
+    ball = tracking["ball"] * pitch
+    players = tracking["players"] * pitch
+    team = tracking["team"]
+    n = len(ball)
+    seen = ~np.isnan(ball[:, 0])
+    index = np.arange(n)
+    cols = {}
+
+    # v2's rules.
+    raw = stoppages.dead_mask(tracking)
+    cols["rule_dead"] = raw
+    cols["rule_dead_tidy"] = stoppages.tidy(raw)
+    cols["out_by"] = stoppages.beyond_line(ball, pitch)
+
+    # The ball: where it is, where it vanished and came back, how long it has been still or gone.
+    last = np.maximum.accumulate(np.where(seen, index, 0))
+    following = np.minimum.accumulate(np.where(seen, index, n - 1)[::-1])[::-1]
+    for prefix, where, mask in (("", index, seen), ("vanish_", last, ~seen),
+                                ("return_", following, ~seen)):
+        x, y = ball[where, 0], ball[where, 1]
+        cols[prefix + "to_goal_line"] = np.where(mask, np.fmin(x, pitch[0] - x), np.nan)
+        cols[prefix + "to_touchline"] = np.where(mask, np.fmin(y, pitch[1] - y), np.nan)
+    cols["gap_moved"] = np.where(seen, np.nan, np.linalg.norm(ball[following] - ball[last], axis=1))
+    speed = stoppages.ball_speed(ball)
+    cols["ball_speed"] = speed
+    cols["ball_speed_past"] = _past(speed, 25, "max")
+    cols["ball_speed_next"] = _future(speed, 25, "max")
+    still = seen & (speed < stoppages.STILL)
+    cols["still_run"], cols["still_since"], cols["still_until"] = _run_info(still)
+    cols["gap_run"], cols["gap_since"], cols["gap_until"] = _run_info(~seen)
+
+    # The players: how fast (against this match's typical speed), how many walk, how many the
+    # tracker still follows, how they spread, crowd the ball or the boxes.
+    on = ~np.isnan(players[:, :, 0])
+    count = on.sum(axis=1)
+    speeds = np.where(on, tracking["speed"].astype(float), np.nan)
+    _, mean_speed, _ = _team_stats(speeds, np.ones(len(team), dtype=bool))
+    relative = mean_speed / np.nanmedian(mean_speed[seen]) if seen.any() else mean_speed
+    for w in STOP_WINDOWS:
+        cols["speed{}".format(w)] = windowed_mean(relative, w)
+    cols["speed_past75"] = _past(relative, 75, "mean")
+    cols["speed_next75"] = _future(relative, 75, "mean")
+    walking = np.where(count > 0, np.sum(on & (np.nan_to_num(speeds, nan=0.0) < WALKING), axis=1)
+                       / np.maximum(count, 1), np.nan)
+    for w in (25, 75):
+        cols["walking{}".format(w)] = windowed_mean(walking, w)
+    team_speed = [windowed_mean(_team_stats(speeds, team == code)[1], 75) for code in (HOME, AWAY)]
+    cols["team_speed_low"], cols["team_speed_high"] = np.fmin(*team_speed), np.fmax(*team_speed)
+    cols["objects"] = count
+    cols["objects_low75"] = pd.Series(count).rolling(151, center=True, min_periods=1).min().to_numpy()
+    for axis, name in ((0, "spread_x"), (1, "spread_y")):
+        _, _, spread = _team_stats(players[:, :, axis], np.ones(len(team), dtype=bool))
+        cols[name] = windowed_mean(spread, 25)
+    d = np.linalg.norm(players - ball[:, None, :], axis=2)
+    for r in (5, 10):
+        cols["near_ball{}".format(r)] = np.where(seen, np.sum(d < r, axis=1), np.nan)
+    end = np.fmin(players[:, :, 0], pitch[0] - players[:, :, 0])
+    in_box = on & (end <= BOX_DEPTH) & (np.abs(players[:, :, 1] - pitch[1] / 2) <= BOX_HALF_WIDTH)
+    cols["in_box"] = windowed_mean(in_box.sum(axis=1).astype(float), 25)
+
+    names = list(cols)
+    return np.column_stack([np.asarray(cols[c], dtype=np.float32) for c in names]), names
+
+
 def swapped(tracking):
     """The same match with team codes 0 and 1 exchanged."""
     team = tracking["team"]
@@ -232,6 +324,13 @@ def training_rows(tracking, labels):
     rows = np.flatnonzero(~dead & np.isin(labels, ("H", "A")))[::SUBSAMPLE]
     y = labels[rows] == "H"
     return np.concatenate([ours[rows], theirs[rows]]), np.concatenate([y, ~y]).astype(np.int8)
+
+
+def stoppage_rows(tracking, labels):
+    """Rows for every SUBSAMPLE-th graded frame; y = 1 on dead ball."""
+    x, _ = stoppage_features(cleanup.clean(tracking))
+    rows = np.flatnonzero(labels != "X")[::SUBSAMPLE]
+    return x[rows], (labels[rows] == "D").astype(np.int8)
 
 
 def fit(x, y):
@@ -279,6 +378,39 @@ def decode(p, dead, switch_cost=SWITCH_COST):
     return team
 
 
+def decode_joint(p_dead, p_home, live_cost=LIVE_COST, switch_cost=SWITCH_COST):
+    """H/A/D codes per frame (HOME, AWAY, and 2 for dead) from both models at once: the cheapest
+    sequence for the probabilities, paying live_cost per start or end of a stoppage and
+    switch_cost per change of team. Deciding together lets a doubtful stoppage give way to a
+    clear change of team and the reverse, which two separate passes cannot."""
+    p_dead = np.clip(p_dead, 1e-4, 1 - 1e-4)
+    p_home = np.clip(p_home, 1e-4, 1 - 1e-4)
+    costs = [(-np.log((1 - p_dead) * p_home)).tolist(),
+             (-np.log((1 - p_dead) * (1 - p_home))).tolist(),
+             (-np.log(p_dead)).tolist()]
+    n = len(p_dead)
+    came = [bytearray(n), bytearray(n), bytearray(n)]  # previous state of each state
+    change = ((0.0, switch_cost, live_cost), (switch_cost, 0.0, live_cost),
+              (live_cost, live_cost, 0.0))  # change[from][to]
+    acc = [costs[0][0], costs[1][0], costs[2][0]]
+    for t in range(1, n):
+        new = [0.0, 0.0, 0.0]
+        for s in range(3):
+            best, origin = acc[s], s
+            for r in range(3):
+                if r != s and acc[r] + change[r][s] < best:
+                    best, origin = acc[r] + change[r][s], r
+            new[s] = best + costs[s][t]
+            came[s][t] = origin
+        acc = new
+    path = np.empty(n, dtype=np.int8)
+    state = int(np.argmin(acc))
+    for t in range(n - 1, -1, -1):
+        path[t] = state
+        state = came[state][t]
+    return path
+
+
 def labels_from(team, dead):
     labels = np.where(team == HOME, "H", "A").astype("<U1")
     labels[dead] = "D"
@@ -298,9 +430,12 @@ def _fingerprint():
     return digest.hexdigest()[:12]
 
 
-def match_rows(name):
+ROWS = {"team": training_rows, "dead": stoppage_rows}
+
+
+def match_rows(name, kind="team"):
     """Training rows of one practice match, from its three damaged copies; cached."""
-    path = os.path.join(CACHE_DIR, "rows_{}_{}.npz".format(name, _fingerprint()))
+    path = os.path.join(CACHE_DIR, "rows_{}_{}_{}.npz".format(kind, name, _fingerprint()))
     if os.path.isfile(path):
         with np.load(path) as stored:
             return stored["x"], stored["y"]
@@ -308,7 +443,7 @@ def match_rows(name):
     from possession.external import load_source
     t = load_source(name)
     profile = our_profile()
-    parts = [training_rows(damage(t, s, np.random.default_rng(TRAIN_SEED), profile), t["labels"])
+    parts = [ROWS[kind](damage(t, s, np.random.default_rng(TRAIN_SEED), profile), t["labels"])
              for s in SCENARIOS]
     x, y = np.concatenate([p[0] for p in parts]), np.concatenate([p[1] for p in parts])
     os.makedirs(CACHE_DIR, exist_ok=True)
@@ -316,14 +451,16 @@ def match_rows(name):
     return x, y
 
 
-def trained_model(leave_out=None):
-    """The model trained on every practice match except `leave_out`; cached."""
+def trained_model(leave_out=None, kind="team"):
+    """The `kind` model ("team" or "dead") trained on every practice match except `leave_out`;
+    cached."""
     names = [m for m in practice_matches() if m != leave_out]
-    path = os.path.join(CACHE_DIR, "model_{}_{}.pkl".format(leave_out or "all", _fingerprint()))
+    path = os.path.join(CACHE_DIR, "model_{}_{}_{}.pkl".format(
+        kind, leave_out or "all", _fingerprint()))
     if os.path.isfile(path):
         with open(path, "rb") as f:
             return pickle.load(f)
-    rows = [match_rows(m) for m in names]
+    rows = [match_rows(m, kind) for m in names]
     model = fit(np.concatenate([x for x, _ in rows]), np.concatenate([y for _, y in rows]))
     os.makedirs(CACHE_DIR, exist_ok=True)
     with open(path, "wb") as f:
@@ -338,3 +475,24 @@ def predict(tracking, frames=None, switch_cost=SWITCH_COST):
     model = trained_model(name if name in practice_matches() else None)
     dead, ours, theirs, _ = both_views(tracking)
     return labels_from(decode(home_probability(model, ours, theirs), dead, switch_cost), dead)
+
+
+def probabilities(tracking, leave_out=None):
+    """P(dead) and P(team 0 has the ball) per frame from the two trained models."""
+    team_model = trained_model(leave_out, "team")
+    dead_model = trained_model(leave_out, "dead")
+    tracking = cleanup.clean(tracking)
+    dead = stoppages.tidy(stoppages.dead_mask(tracking))
+    ours, _ = features(tracking, dead)
+    theirs, _ = features(swapped(tracking), dead)
+    p_home = home_probability(team_model, ours, theirs)
+    p_dead = dead_model.predict_proba(stoppage_features(tracking)[0])[:, 1]
+    return p_dead, p_home
+
+
+def predict_joint(tracking, frames=None, live_cost=LIVE_COST, switch_cost=SWITCH_COST):
+    """H/A/D per frame: learned stoppages and learned team, decoded together (v6 candidate)."""
+    name = tracking.get("name")
+    p_dead, p_home = probabilities(tracking, name if name in practice_matches() else None)
+    path = decode_joint(p_dead, p_home, live_cost, switch_cost)
+    return labels_from(path, path == 2)

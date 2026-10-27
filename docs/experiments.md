@@ -5,6 +5,7 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 | Date | Who | Branch | What changed | Public spellF1 / macroF1 | Damage-test spellF1 (mean ± spread) | Possessions (full match) | Mean length (s) | D share | Notes |
 |---|---|---|---|---|---|---|---|---|---|
+| 2026-10-26 | Claude | phase1-tools | **v6** = v5's team model + **learned stoppage model** (35 clues: v2's rules, ball still/gap, where the ball vanished and returned, player speed and walking, objects tracked, layout; gradient-boosted trees on the damaged practice matches) + **one Viterbi decoder for H/A/D** (stoppage edge 40, team change 10) | 0.6400 / – | 0.572 (0.472–0.708), v5 0.440, 30 runs | 282 | 12.8 | 43% | Practice (fresh seeds) **0.558 vs v5 0.430**; every scenario up (random 0.517 vs 0.338); dead frames missed/false 5%/4% vs 24%/23%. Our match: Smart Tagging agreement 76/84%, set-piece windows with D 95%, D share 43%; 2.66 possessions/min (falling); public window D 10% vs truth 20% (to check on practice). Valid; byte-identical on rerun and from an empty cache |
 | 2026-10-26 | Claude | phase1-tools | **v5** = v4's stoppages + **learned team call** (`possession/learned.py`, M15): 59 clues per frame (near, before/after, control events, ball, team shape), gradient-boosted trees trained on the 8 damaged practice matches (both teams' views), Viterbi decoding with switch cost 10 | 0.6065 / 0.7074 | 0.440 (0.282–0.556), v4 0.329 (0.222–0.432), 30 runs | 299 | 12.7 | 40% | Practice (realistic kit, fresh seeds) **0.430 vs v4 0.279**; better in 48/48 paired runs (sweep seeds). Team right on live frames 89.5% vs 81.0%. Our match: Smart Tagging agreement 76/82% (v4 74/78%), possessions <1 s 3% (v4 11%), 2.82 possessions/min (v4 3.45; public truth 3.40); model as confident as on practice (0.90). Valid; byte-identical on rerun and after retraining from nothing |
 | 2026-10-26 | Claude | phase1-tools | **v4** = v3 + touch rule (deep dive 1): control gained by a touch (ball velocity changes ≥ 7 m/s by one team's player, no opponent within 1 m) or a slow hold (3+ frames within 1 m, ball under 6 m/s); a ball passing by never counts | 0.4308 / 0.6652 | – | 365 | 10.4 | 40% | Practice (harder kit) 0.410 vs v3 0.352; better in 48/48 runs on fresh seeds. Our match: 3.45 possessions/min (public truth 3.40), Smart Tagging agreement 74/78%. Quiz 0.431 (top of the public board; noise band ~0.33). Valid, byte-identical on rerun |
 | 2026-10-26 | Claude | phase1-tools | **v3** = v2 stoppages + team by **control** (`possession/control.py`, Link & Hoernig 2017, Vidal-Codina 2022): a team gains the ball when its player holds it within 1 m for 3 frames with no opponent within 1 m; held through passes, loose balls and duels; no smoothing | 0.3565 / 0.6465 | – | 467 | 8.1 | 40% | Practice 0.377 vs v2 0.311; better in 48/48 match × scenario × seed runs on fresh seeds. Our match: fewer short possessions (10% vs 14%), Smart Tagging agreement 70/74% (truth 70/75%), quiz transF1 0.31 vs 0.21; quiz spellF1 0.357 vs 0.371 is within its noise |
@@ -14,6 +15,43 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 | 2026-10-23 | — | main | Baseline smooth50, unchanged | 0.3256 / 0.6207 | 0.226 (0.148–0.316) | 594 | 7.2 | 32% | Reference. Full-match spellF1 0.2433 per EVALUATION.md |
 
 ## Findings
+
+### 2026-10-26 · v6: learned stoppages, decoded together with the team (deep dive 4, M18)
+
+`possession/learned.py` (stoppage_features, decode_joint), `scripts/learned_test.py --stoppages`.
+Stoppage model: same trees and training as the team model, on every 5th graded frame of the
+damaged practice copies (~690,000 rows), y = dead. Leave one match out.
+
+**Sweep** (test seeds 0-1; v5 0.430 on the same copies):
+
+| Stoppages | practice | stoppage | mixed | random | beats v5 | dead frames missed / false |
+|---|---|---|---|---|---|---|
+| v5 (v2's rules) | 0.430 | 0.531 | 0.417 | 0.341 | – | 24% / 23% |
+| learned, P(dead) >= 0.5 + tidy, then team decoder | 0.543 | 0.584 | 0.540 | 0.503 | 48/48 | 5% / 5% |
+| joint decoder, stoppage edge 5 / 10 / 20 | 0.545 / 0.548 / 0.552 | | | | 48/48 | |
+| joint, edge 40, team change 10 | **0.555** | 0.594 | 0.553 | 0.517 | 48/48 | 5% / 4% |
+| joint, edge 80 / 160 (team change 10) | 0.554 / 0.549 | | | | 48/48 | |
+| joint, edge 40, team change 5 / 20 | 0.553 / 0.543 | | | | 48/48 | |
+
+**Fresh seeds 2-3** (`open_test.py --first-seed 2`): v6 0.558, v6_live80 0.557, v5 0.430, baseline
+0.229. Clean tracking: v6 0.686 vs v5 0.668.
+
+**Checks against fooling ourselves.** The model is right 94% of the time on dead vs live even in
+the "random" scenario, where ball gaps carry no stoppage information, so the first suspicion was a
+habit of DFL's tracker (a ball frozen during stoppages). Measured: a visible ball still for 2 s+
+covers 1.5% of our graded frames and 1.3-4.7% of practice ones, too little to explain it. What the
+model leans on (shuffle a family, accuracy drop, mixed scenario): player speed 16.6 points, ball
+still or gone 8.4, ball where 4.9, v2's rules 3.8, layout 1.1, objects tracked 0.1. Lang et al.
+2022 report 92% from player movement alone on 102 Bundesliga matches, so this is plausible. All 35
+clues on our match vs damaged practice: no practice median outside our 10th-90th percentile range,
+no missing-value share off by more than 0.15. On our match: mean confidence 0.947 (practice 0.961),
+6% unsure, 41% of graded frames predicted dead (practice 43%).
+
+**Our match.** Damage test 0.572 (5-95% 0.472-0.708) vs v5 0.440; 13.0 possessions in the window
+(truth 17; v5 10.8). Sanity report: 282 possessions (2.66/min; v5 2.82, v4 3.45), mean 12.8 s,
+D 43%, Smart Tagging 76% / 84%, set-piece windows with D 95%. In the public 5 minutes v6 calls 10%
+of frames dead against the truth's 20% (v4 9%): noted, not tuned on; checked on practice next.
+
 
 ### 2026-10-26 · v5: the team call learned from the practice matches (deep dive 1, M15)
 
