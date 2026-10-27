@@ -2,3 +2,8 @@
 # byte-identical submission. Add new dependencies here with an exact version.
 numpy==2.0.2
 pandas==2.3.3
+# v5's learned team call (possession/learned.py): gradient-boosted trees, trained on open data
+scikit-learn==1.5.2
+scipy==1.13.1
+joblib==1.4.2
+threadpoolctl==3.5.0
