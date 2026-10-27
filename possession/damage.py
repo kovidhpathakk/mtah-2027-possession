@@ -38,6 +38,15 @@ Faults:
                 with a BALL_SMOOTH-frame moving average inside each visible run matches that
                 (2.3-2.4%, 4.3-4.4 m/s, 21-25%; 19 frames was still too rough, 27 too smooth);
                 a kick then looks gradual, as in our data. Applied last, after noise and errors.
+  dead ball     DFL freezes the ball where play stopped for the whole stoppage (100% of 698
+                stoppages of 2 s+; it never moves), then it jumps a median 6.3 m to the restart
+                spot; Metrica has no ball in stoppages. Ours moves: with players at walking pace
+                and the ball in view it is still only 17% of the time, median 1.7 m/s, within
+                1.5 m of a player 44% of the time (2026-10-26). So in each stoppage the ball goes
+                from where play stopped to the player nearest it (within DEAD_REACH), moves with
+                that player for DEAD_CARRY of the stoppage, travels to the restart spot at
+                DEAD_PASS, and lies there until the restart. Without this, a learned stoppage
+                model learns "a visible dead ball never moves", which our match contradicts.
   ball errors   the ball 5-15 m from where it is, for 1-3 s, on BALL_ERROR_SHARE of visible
                 frames. Our two trackers' balls are > 5 m apart on 10.5% of frames, and where the
                 video could decide, our tactical tracker was the wrong one about 1 time in 3
@@ -76,6 +85,10 @@ BALL_ERROR_SHARE = 0.035      # of visible ball frames
 BALL_ERROR_RUN = (1, 3)       # s
 BALL_ERROR_SIZE = (5.0, 15.0) # m
 BALL_SMOOTH = 23              # frames, moving average (see the docstring)
+DEAD_CARRY = (0.3, 0.9)       # share of a stoppage the ball spends with a player (0.2-0.7: still 27% vs ours 17%)
+DEAD_OFFSET = 0.7             # m from that player
+DEAD_REACH = 1.0              # s for the ball to get from where play stopped to that player
+DEAD_PASS = (3.0, 10.0)       # m/s: thrown, rolled or passed to the restart spot
 HOME, AWAY = 0, 1
 
 
@@ -174,6 +187,46 @@ def _smooth_runs(ball, width):
     return out
 
 
+def _dead_ball_shift(t, rng):
+    """(n, 2) metres to add to the ball so stoppages look like ours (see the docstring): carried by
+    the player nearest where play stopped, then thrown, rolled or passed to the restart spot, then
+    placed. Zero outside stoppages and where a source has no ball in stoppages (Metrica)."""
+    pitch = np.array(t["pitch"])
+    ball = t["ball"] * pitch
+    players = t["players"] * pitch
+    n = len(ball)
+    shift = np.zeros((n, 2))
+    for a, b in _runs(t["labels"] == "D"):
+        if a == 0 or b >= n or b - a < 2:
+            continue
+        p0, p1 = ball[a - 1], ball[b]
+        if np.isnan(p0).any() or np.isnan(p1).any() or np.isnan(ball[a:b, 0]).all():
+            continue
+        distance = np.linalg.norm(players[a] - p0, axis=1)
+        if np.isnan(distance).all():
+            continue
+        carrier = int(np.nanargmin(distance))
+        angle = rng.uniform(0, 2 * np.pi)
+        length = b - a
+        carry = min(length - 1, max(1, int(rng.uniform(*DEAD_CARRY) * length)))
+        speed = rng.uniform(*DEAD_PASS)
+        follow = players[a:a + carry, carrier] + DEAD_OFFSET * np.array([np.cos(angle), np.sin(angle)])
+        lost = np.isnan(follow[:, 0])
+        if lost.all():
+            continue
+        follow = follow[np.maximum.accumulate(np.where(~lost, np.arange(carry), 0))]
+        follow[np.isnan(follow[:, 0])] = p0
+        reach = np.minimum(1.0, np.arange(carry) / (DEAD_REACH * FPS))[:, None]
+        carried = (1 - reach) * p0 + reach * follow
+        q = carried[-1]
+        steps = min(length - carry, max(1, int(np.linalg.norm(p1 - q) / speed * FPS)))
+        passed = q + (np.arange(1, steps + 1) / steps)[:, None] * (p1 - q)
+        path = np.concatenate([carried, passed, np.repeat(p1[None], length - carry - steps, axis=0)])
+        shift[a:b] = path - ball[a:b]
+    shift[np.isnan(shift)] = 0.0
+    return shift
+
+
 def damage(t, scenario, rng, profile):
     """A damaged copy of an external match `t` (from load_source). Labels are left untouched."""
     n, slots = t["players"].shape[:2]
@@ -190,7 +243,6 @@ def damage(t, scenario, rng, profile):
         angle = rng.uniform(0, 2 * np.pi)
         size = rng.uniform(*BALL_ERROR_SIZE)
         ball[a:b] += np.array([np.cos(angle), np.sin(angle)]) * size / pitch
-    out["ball"] = _smooth_runs(ball, BALL_SMOOTH)
 
     # Missing players: episodes like ours (see the docstring).
     players = t["players"].copy()
@@ -267,4 +319,9 @@ def damage(t, scenario, rng, profile):
     lagged = np.full_like(speed, np.nan)
     lagged[SPEED_LAG:] = speed[:-SPEED_LAG]
     out["speed"] = lagged
+
+    # The ball in stoppages moves, as in ours (drawn last, so every fault above stays as it was;
+    # every step before is additive or a mask, so the order does not matter), then smoothing.
+    ball = ball + _dead_ball_shift(t, rng) / pitch
+    out["ball"] = _smooth_runs(ball, BALL_SMOOTH)
     return out

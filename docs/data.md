@@ -12,7 +12,7 @@ Confidence: **high** (several independent checks), **medium** (one kind of evide
 
 | # | Assumption | Evidence so far | Confidence | How to verify better |
 |---|---|---|---|---|
-| A1 | Ball gaps of 5 s+ are mostly stoppages | Kovidh's review of the 15 longest gaps; gap-length counts; the broadcast tracker; the video detector sees a ball in ~2/3 of gap frames | high | – |
+| A1 | Ball gaps of 5 s+ are mostly stoppages | Kovidh's review of the 15 longest gaps; gap-length counts; the broadcast tracker; the video detector sees a ball in ~2/3 of gap frames; **2026-10-26: with the ball missing our players move at 53% of their typical pace, exactly the practice "gaps at stoppages" scenario (52%; mixed 73%, random 108%)** | high | – |
 | A2 | Dead ball is ~40-50% of our match | LaLiga ball-in-play figures; DFL matches 41-52% | medium | – |
 | A3 | The provided ball path is smoothed over ~0.9 s | tracking numbers (sharp velocity changes 1.9% vs 9-13% in DFL); broadcast-video detector around control moments: detected ball sharper than the provided one (9% vs 4%), but detector jitter adds sharpness; tactical-video check inconclusive | medium | the practice test does not depend on the cause: the realism report confirms practice balls now move like ours |
 | A4 | DFL's possession definition matches our ground truth's | both come from a tracking provider's fields (CHALLENGE.md); in DFL the new team is within 1 m at 84% of changes | medium-low | compare definitional patterns (where changes happen relative to players), without tuning anything |
@@ -26,6 +26,12 @@ Confidence: **high** (several independent checks), **medium** (one kind of evide
 | A12 | v5/v6's models, trained on the damaged practice matches, transfer to our match | rests on A4-A6. Team model: as confident on our match as on practice (0.90), Smart Tagging agreement up, less flicker. Stoppage model: all 35 clues inside our match's 10th-90th percentile range on practice, confidence 0.947 vs 0.961, 41% predicted dead. Damage test v6 0.572 vs v4 0.329 | medium | sealed exam on matches never used for choices (E1); deep dive 5 on our match's clips; the public window's dead share (10% vs truth 20%) is a warning to explain |
 
 ## Data-quality register
+
+**Practice data conventions (found 2026-10-26, deep dive 5):** DFL freezes the ball where play
+stopped for the whole stoppage (698 of 698 stoppages of 2 s+; it then jumps a median 6.3 m to the
+restart spot); Metrica has no ball in stoppages. Our tracker's ball moves in stoppages (still 17%
+of the time in walking phases, median 1.7 m/s). The damage kit now moves the practice dead ball
+(`possession/damage.py`, "dead ball").
 
 Every problem found in the provided data, and what we do about it. Status: **fixed** (code removes
 or corrects it), **worked around** (the model avoids relying on it), **copied into practice** (the

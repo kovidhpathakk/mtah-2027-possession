@@ -14,9 +14,9 @@ Last updated: 2026-10-26.
 
 | | |
 |---|---|
-| **Best model** | **v6** (new candidate): practice **0.558** on the realistic kit (v5 0.430, v4 0.279 on the same damaged copies; baseline 0.229 here vs its real 0.243). Realistic expectation on the real match: around 0.5-0.55, if practice stays as close to reality as it is for the baseline (within ~0.015) |
+| **Best model** | **v6** (candidate): practice **0.538** on the corrected kit (v5 0.422, v4 0.280; baseline 0.237 here vs its real 0.243). Realistic expectation on the real match: around 0.5-0.55, if practice stays as close to reality as it is for the baseline (within ~0.015) |
 | **Safe entry** | `insurance_baseline`, validated, ready to upload; `ours_v4.csv`, `ours_v5.csv`, `ours_v6.csv` also valid |
-| **Working on** | Deep dive 5: understand v6's remaining errors before adding anything (anatomy, real cases, clips); a sealed final exam (Metrica Games 1-2) |
+| **Working on** | Deep dive 5: v6's remaining errors. Done: the practice dead ball was unrealistic (fixed). Next: ball in the air, the falling possession count, review clips for Kovidh, a sealed exam |
 | **Waiting for** | organisers' answers to issues #14 and #11 |
 | **Docs** | `docs/README.md` maps every file |
 | **Deadline** | 17 November 2026 |
@@ -327,6 +327,16 @@ with swap).
    and it is as sure of itself there. Rebuilt from nothing, the submission is byte-identical.
 5. **Warnings for the next dive:** possessions keep falling (2.66 a minute on our match), and in the
    public window v6 calls 10% of frames dead against the truth's 20% (not tuned on).
+
+**Deep dive 5: v6's remaining errors (from Oct 26)**
+1. **The practice data's stoppages were unrealistic.** New realism measures (no answers needed)
+   showed DFL freezes the ball where play stopped for the whole stoppage, while ours moves (carried,
+   thrown, rolled). v6 had never seen a stoppage with a moving ball. The damage kit now moves the
+   practice dead ball like ours. Practice got slightly harder (v6 0.555 → 0.538; the baseline's
+   practice score now within 0.006 of its real one), and on our match v6's dead-ball share in the
+   public window moved from 10% to 15% (truth 20%) without anything being tuned on it. Bonus: our
+   players' pace during ball gaps shows our tracker's gaps sit at stoppages (the "stoppage"
+   scenario), something we had thought unmeasurable without answers.
 
 **Where we stand on testing.** Every practice match is scored by models trained on the other
 seven, and settings are confirmed on fresh damage. But all 8 matches have shaped our choices, so a

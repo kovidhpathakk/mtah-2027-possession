@@ -133,8 +133,9 @@ its kickoff (frame 113,742).
   Bassek et al. 2025) and Metrica's Sample Game 3. Never our match.
 - **Damage first:** each match is damaged three ways (`possession/damage.py`) so it looks like our
   tracking: ball missing 41% of the time (gaps placed at stoppages, half at stoppages, or at
-  random, because we cannot know which our tracker does), ball path smoothed and noisy, wrong team
-  labels, players dropped, a ghost, the speed column delayed.
+  random; our players' pace during gaps matches the first), ball path smoothed and noisy, the ball
+  moving in stoppages as ours does (DFL freezes it), wrong team labels, players dropped, a ghost,
+  the speed column delayed.
 - **Rows:** every 5th frame (neighbours are near copies): ~620,000 team rows (live frames, both
   teams' views) and ~690,000 stoppage rows (all graded frames).
 - **Model:** scikit-learn's HistGradientBoostingClassifier: 200 small decision trees, each a chain
@@ -154,19 +155,20 @@ was audited; their use is planned (`docs/plan.md`, "Data use").
 
 | Test | v6 | v5 | v4 |
 |---|---|---|---|
-| Practice, realistic damage, fresh seeds (baseline 0.229 here, 0.243 on the real match) | **0.558** | 0.430 | 0.279 |
+| Practice, corrected kit (dead ball moves; seeds 0-1; baseline 0.237 here, 0.243 on the real match) | **0.538** | 0.422 | 0.280 |
+| Practice, previous kit, fresh seeds | 0.558 | 0.430 | 0.279 |
 | Practice per scenario: gaps at stoppages / mixed / random | 0.597 / 0.561 / 0.517 | 0.527 / 0.425 / 0.338 | 0.348 / 0.271 / 0.219 |
 | Dead-ball frames: missed / false (practice) | 5% / 4% | 24% / 23% | 24% / 23% |
 | Damage test (public window, ball deleted to the match's rate; 30 runs) | **0.572** | 0.440 | 0.329 |
 | Public 5 minutes (17 possessions; noise band ~0.37) | 0.640 | 0.607 | 0.431 |
-| Our match: Smart Tagging agreement, attacking / defending | 76% / 84% | 76% / 82% | 74% / 78% |
-| Our match: set-piece windows with a dead ball | 95% | 92% | 92% |
-| Our match: possessions per minute / dead-ball share | 2.66 / 43% | 2.82 / 40% | 3.45 / 40% |
+| Our match: Smart Tagging agreement, attacking / defending | 79% / 86% | 76% / 82% | 74% / 78% |
+| Our match: set-piece windows with a dead ball | 93% | 92% | 92% |
+| Our match: possessions per minute / dead-ball share | 2.46 / 47% | 2.82 / 40% | 3.45 / 40% |
 
-**Caveats.** (1) Fewer possessions than the truth, and falling with each version (our match 2.66 a
-minute; the public window's truth 3.40; on practice v5 makes 3.4 against 4.5). (2) In the public 5
-minutes v6 calls 10% of frames dead against the truth's 20% (not tuned on; to be checked on
-practice: short stoppages with the ball in view?). (3) Everything rests on the practice damage
+**Caveats.** (1) Fewer possessions than the truth, and falling with each version (our match 2.46 a
+minute; the public window's truth 3.40; on practice v5 makes 3.4 against 4.5): deep dive 5. (2) In
+the public 5 minutes v6 calls 15% of frames dead against the truth's 20% (was 10% before the
+practice dead ball was made to move like ours; not tuned on). (3) Everything rests on the practice damage
 being realistic (assumptions A5, A12; `scripts/realism_report.py`). On our match the stoppage
 model is about as sure of itself as on practice (0.947 vs 0.961) and calls 41% of frames dead.
 

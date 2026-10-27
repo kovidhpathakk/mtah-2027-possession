@@ -119,6 +119,12 @@ def measures(t, graded):
     out["player speed with the ball missing, vs typical"] = np.nanmedian(relative[graded & ~seen])
     out["players walking (< 1.5 m/s), share of player-frames"] = np.nanmean(
         np.where(present[graded], speeds[graded] < 1.5, np.nan))
+    # the ball while players walk (mostly stoppages): still, how fast, carried?
+    walk = graded & seen & (relative < 0.5)
+    ball_speed = stoppages.ball_speed(ball)
+    out["walking phases, ball in view: ball still"] = np.mean(ball_speed[walk] < stoppages.STILL)
+    out["walking phases, ball in view: ball speed median (m/s)"] = np.nanmedian(ball_speed[walk])
+    out["walking phases, ball in view: a player within 1.5 m"] = np.mean(nearest[walk] < 1.5)
     return out
 
 

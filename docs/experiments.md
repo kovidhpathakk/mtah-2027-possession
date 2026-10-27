@@ -16,6 +16,18 @@ the public 5 minutes alone, and treat spellF1 gaps under ~0.04 as noise.
 
 ## Findings
 
+### 2026-10-26 · Deep dive 5, step 1: the practice dead ball was frozen; kit fixed
+
+Details in `docs/deep-dives/05-v6-errors.md`. DFL freezes the ball where play stopped (698/698
+stoppages); ours moves (walking phases with the ball in view: still 17%, median 1.7 m/s). New kit
+fault "dead ball" (carried by the nearest player for 30-90% of the stoppage, then 3-10 m/s to the
+restart spot). Realism after: still 22%, 1.51 m/s, player within 1.5 m 52% (ours 17%, 1.72, 44%).
+Also: with the ball missing our players move at 53% of their typical pace, the practice "gaps at
+stoppages" scenario 52%, mixed 73%, random 108%. Re-scored (seeds 0-1): v6 0.538 (was 0.555), v5
+0.422, v4 0.280, baseline 0.237 (real 0.243). Our match, v6 retrained: public-window dead share
+15% (was 10%; truth 20%), Smart Tagging 79/86%, D 47%, 2.46 possessions/min (was 2.66).
+
+
 ### 2026-10-26 · v6: learned stoppages, decoded together with the team (deep dive 4, M18)
 
 `possession/learned.py` (stoppage_features, decode_joint), `scripts/learned_test.py --stoppages`.

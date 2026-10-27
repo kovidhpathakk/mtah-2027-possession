@@ -20,6 +20,14 @@ useless or duplicated by another.
     .venv/bin/python scripts/learned_test.py --oracle
     .venv/bin/python scripts/learned_test.py --stoppages
     .venv/bin/python scripts/learned_test.py --possessions [--method v5]
+    .venv/bin/python scripts/learned_test.py --air
+
+--air asks how v6 copes with the ball in the air. Our tracking is flat (no height): a lofted ball
+is lost or placed where its shadow falls, under players' heads. DFL measures the ball's height,
+so on the DFL matches (clean height, damaged tracking, held-out models) the team call and the
+stoppage call are scored by ball height, and the 2 s after a high ball comes down are scored on
+their own (who wins the landing). Also checks the 2D proxy "ball moving at 18 m/s+" for "in the
+air", which is all we could use on our match.
 
 --possessions asks which possessions a method finds: each true possession (a run of H or of A in
 the answers) counts as found when a predicted possession of the same team overlaps it with
@@ -194,6 +202,62 @@ def possession_test(method, seeds):
             r[0] / max(r[1], 1)))
 
 
+HEIGHTS = (("on the ground (< 0.5 m)", 0.0, 0.5), ("low (0.5-2 m)", 0.5, 2.0),
+           ("high (2 m+)", 2.0, 99.0))
+
+
+def air_test():
+    """v6 by ball height on the DFL matches (see the docstring); damage seed 0."""
+    profile = our_profile()
+    rows = {h[0]: np.zeros(5) for h in HEIGHTS}   # live frames, both live, team right, called dead, visible
+    landing = np.zeros(2)
+    fast_high, fast_all = 0, 0
+    heights = []
+    for name in learned.practice_matches():
+        t = load_source(name)
+        if "ball_z" not in t:
+            continue
+        z = t["ball_z"].astype(float)
+        live = np.isin(t["labels"], ("H", "A"))
+        heights.append(np.nanmedian(z[live]))
+        pitch = np.array(t["pitch"])
+        clean_speed = stoppages.ball_speed(t["ball"] * pitch)
+        fast = live & (clean_speed >= 18.0)
+        fast_all += int(fast.sum())
+        fast_high += int((fast & (z >= 2.0)).sum())
+        high = live & (z >= 2.0)
+        came_down = np.flatnonzero(high[:-1] & ~high[1:])
+        after = np.zeros(len(z), dtype=bool)
+        for f in came_down:
+            after[f + 1:f + 51] = True
+        for scenario in SCENARIOS:
+            damaged = damage(t, scenario, np.random.default_rng(0), profile)
+            p_dead, p_home = learned.probabilities(damaged, name)
+            path = learned.decode_joint(p_dead, p_home, 40.0, 10.0)  # v6
+            v6 = learned.labels_from(path, path == 2)
+            visible = ~np.isnan(damaged["ball"][:, 0])
+            for label, low, top in HEIGHTS:
+                rows_ = live & (z >= low) & (z < top)
+                both = rows_ & (v6 != "D")
+                rows[label] += [rows_.sum(), both.sum(), (v6[both] == t["labels"][both]).sum(),
+                                (v6[rows_] == "D").sum(), visible[rows_].sum()]
+            both = after & live & (v6 != "D")
+            landing += [both.sum(), (v6[both] == t["labels"][both]).sum()]
+        print("  {}".format(name))
+    print("\nDFL ball height on live frames: median {:.2f} m (sanity: a ball on the ground ~0.1-0.2 m)".format(
+        np.median(heights)))
+    total = sum(r[0] for r in rows.values())
+    print("{:<26} {:>9} {:>14} {:>15} {:>20}".format("ball", "of live", "team right", "called dead",
+                                                       "visible (damaged)"))
+    for label, r in rows.items():
+        print("{:<26} {:>9.1%} {:>14.1%} {:>15.1%} {:>20.0%}".format(
+            label, r[0] / total, r[2] / max(r[1], 1), r[3] / max(r[0], 1), r[4] / max(r[0], 1)))
+    print("first 2 s after a high ball comes down: team right {:.1%} ({:,} frames)".format(
+        landing[1] / max(landing[0], 1), int(landing[0])))
+    print("2D proxy: live frames with the ball at 18 m/s+ are high (2 m+) {:.0%} of the time".format(
+        fast_high / max(fast_all, 1)))
+
+
 def possessions_per_minute(labels, graded):
     live = np.isin(np.where(graded, labels, "D"), ("H", "A"))
     starts = live & np.r_[True, labels[1:] != labels[:-1]]
@@ -282,6 +346,7 @@ if __name__ == '__main__':
     parser.add_argument("--oracle", action="store_true", help="where v5 still loses points")
     parser.add_argument("--stoppages", action="store_true", help="learned stoppages (deep dive 4)")
     parser.add_argument("--possessions", action="store_true", help="found and invented possessions")
+    parser.add_argument("--air", action="store_true", help="v6 by ball height (DFL)")
     parser.add_argument("--method", default="v5", help="for --possessions")
     parser.add_argument("--first-seed", type=int, default=0, help="first damage seed of the test copies")
     parser.add_argument("--live-costs", nargs="+", type=float, default=list(LIVE_COSTS),
@@ -290,6 +355,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.possessions:
         possession_test(args.method, args.seeds)
+        sys.exit(0)
+    if args.air:
+        air_test()
         sys.exit(0)
     if args.stoppages:
         stoppage_test(args.seeds, args.live_costs, args.switch_costs, args.first_seed)
